@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (for local development; production uses Neon)
+  postgres:
+    image: postgres:16-alpine
+    container_name: kenzo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kenzo_hrms
+      POSTGRES_USER: kenzo_user
+      POSTGRES_PASSWORD: kenzo_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kenzo_user -d kenzo_hrms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for caching, sessions, BullMQ)
+  redis:
+    image: redis:7-alpine
+    container_name: kenzo-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Commander (Redis GUI - development only)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: kenzo-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+  redis_data:
