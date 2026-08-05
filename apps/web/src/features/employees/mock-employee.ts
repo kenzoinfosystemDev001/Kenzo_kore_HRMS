@@ -1,0 +1,35 @@
+export const mockEmployee = {
+  id: "EMP-001",
+  firstName: "John",
+  lastName: "Doe",
+  email: "john.doe@kenzo.com",
+  phone: "+1 (555) 123-4567",
+  department: "Engineering",
+  designation: "Senior Frontend Engineer",
+  status: "Active",
+  joinDate: "2020-03-15",
+  manager: "Sarah Jenkins",
+  location: "New York, USA",
+  address: "123 Tech Lane, Silicon Valley, CA 94025",
+  dob: "1990-08-22",
+  gender: "Male",
+  maritalStatus: "Single",
+  emergencyContact: {
+    name: "Jane Doe",
+    relation: "Sister",
+    phone: "+1 (555) 987-6543",
+  },
+  employmentHistory: [
+    {
+      title: "Senior Frontend Engineer",
+      date: "2022-01-01 - Present",
+      type: "Promotion",
+    },
+    {
+      title: "Frontend Engineer",
+      date: "2020-03-15 - 2021-12-31",
+      type: "New Hire",
+    },
+  ],
+  salary: "$120,000",
+}
