@@ -56,7 +56,7 @@ export class LeaveService {
     const request = await this.prisma.leaveRequest.findFirst({ where: { id, tenantId } });
     if (!request) throw new NotFoundException('Leave request not found');
     
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const updated = await tx.leaveRequest.update({
         where: { id },
         data: { status: 'approved', reviewedBy: reviewerId, reviewedAt: new Date(), reviewerComments: comments },

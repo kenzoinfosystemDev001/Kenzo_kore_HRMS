@@ -46,7 +46,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const slug = dto.companyName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: any) => {
       // Create tenant
       const tenant = await tx.tenant.create({ data: { name: dto.companyName, slug: `${slug}-${Date.now()}` } });
       // Create organization

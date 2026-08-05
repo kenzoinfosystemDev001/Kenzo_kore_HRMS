@@ -40,7 +40,7 @@ export class DashboardService {
       presentToday,
       onLeave,
       pendingRequests,
-      departmentDistribution: departmentDistribution.map(d => ({
+      departmentDistribution: departmentDistribution.map((d: any) => ({
         name: d.name,
         count: d._count.employees,
       })),

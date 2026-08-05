@@ -20,8 +20,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       include: { userRoles: { include: { role: { include: { rolePermissions: { include: { permission: true } } } } } } },
     });
     if (!user || user.deletedAt) throw new UnauthorizedException();
-    const permissions = user.userRoles.flatMap(ur => ur.role.rolePermissions.map(rp => rp.permission.code));
-    const roles = user.userRoles.map(ur => ur.role.slug);
+    const permissions = user.userRoles.flatMap((ur: any) => ur.role.rolePermissions.map((rp: any) => rp.permission.code));
+    const roles = user.userRoles.map((ur: any) => ur.role.slug);
     return { userId: user.id, email: user.email, tenantId: user.tenantId, permissions, roles };
   }
 }
