@@ -151,13 +151,14 @@ async function main() {
   const emp1 = await prisma.employee.create({
     data: {
       tenantId: tenant.id,
+      organizationId: org.id,
       employeeCode: 'EMP-1001',
       firstName: 'Ankit',
       lastName: 'Sethi',
       workEmail: 'ankit.sethi@kenzo.com',
       departmentId: deptExecutive.id,
-      joiningDate: new Date('2024-01-01'),
-      status: 'ACTIVE',
+      dateOfJoining: new Date('2024-01-01'),
+      employmentStatus: 'active',
     },
   });
   await prisma.user.update({
@@ -168,13 +169,14 @@ async function main() {
   const emp2 = await prisma.employee.create({
     data: {
       tenantId: tenant.id,
+      organizationId: org.id,
       employeeCode: 'EMP-1002',
       firstName: 'Sujal',
       lastName: 'Kumar',
       workEmail: 'sujal.k@kenzo.com',
       departmentId: deptEngineering.id,
-      joiningDate: new Date('2024-01-15'),
-      status: 'ACTIVE',
+      dateOfJoining: new Date('2024-01-15'),
+      employmentStatus: 'active',
     },
   });
   await prisma.user.update({
