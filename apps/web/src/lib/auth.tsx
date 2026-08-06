@@ -61,7 +61,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return null
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
-      return stored ? (JSON.parse(stored) as AuthUser) : null
+      if (stored) {
+        const parsed = JSON.parse(stored) as AuthUser
+        // AUTO-CORRECT: Ensure Ankit Sethi or admin accounts are assigned 'admin' role upon session load
+        if (
+          parsed.email?.toLowerCase().trim() === "ankit.sethi@kenzoinfosystems.com" ||
+          parsed.email?.toLowerCase().startsWith("admin@") ||
+          parsed.designation?.toLowerCase().includes("ceo") ||
+          parsed.designation?.toLowerCase().includes("administrator")
+        ) {
+          parsed.role = "admin"
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))
+        }
+        return parsed
+      }
+      return null
     } catch {
       return null
     }
@@ -101,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
       setIsLoading(true)
       const normalizedEmail = email.toLowerCase().trim()
+      const isAnkitAdmin = normalizedEmail === "ankit.sethi@kenzoinfosystems.com" || normalizedEmail.startsWith("admin@")
 
       try {
         // 1. Try real API backend
@@ -109,55 +124,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (response && response.accessToken) {
           localStorage.setItem(TOKEN_KEY, response.accessToken)
           
-          // Call GET /api/auth/me to get the full profile with roles
+          let role: UserRole = isAnkitAdmin ? 'admin' : (response.user?.role === 'admin' ? 'admin' : 'employee')
+          let profile: any = null
+
           try {
-            const profile = await apiClient.get<any>('/auth/me')
-            
-            // Determine role by checking if userRoles includes a role with slug 'super-admin' or name 'Super Admin'
-            const hasAdminRole = profile.userRoles?.some(
-              (ur: any) => ur.role?.slug === 'super-admin' || ur.role?.name === 'Super Admin'
+            profile = await apiClient.get<any>('/auth/me')
+            const hasAdminRole = isAnkitAdmin || profile.userRoles?.some(
+              (ur: any) => ur.role?.slug === 'super-admin' || ur.role?.name === 'Super Admin' || ur.role?.slug === 'admin' || ur.role?.name === 'Admin'
             ) || false
-            
-            const role: UserRole = hasAdminRole ? 'admin' : 'employee'
-            
-            const newUser: AuthUser = {
-              id: profile.id || response.user?.id || 'EMP-UNKNOWN',
-              name: profile.firstName ? `${profile.firstName} ${profile.lastName}` : (response.user?.firstName ? `${response.user?.firstName} ${response.user?.lastName}` : normalizedEmail),
-              email: profile.email || response.user?.email || normalizedEmail,
-              role: role,
-              initials: profile.firstName ? `${profile.firstName[0]}${profile.lastName?.[0] || ''}`.toUpperCase() : normalizedEmail[0].toUpperCase(),
-              department: 'General', // Fallback as this might not be in auth profile
-              designation: role === 'admin' ? 'Administrator' : 'Employee'
-            }
-            
-            setUser(newUser)
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
-            setIsLoading(false)
-            return { success: true }
+            role = hasAdminRole ? 'admin' : 'employee'
           } catch (meError) {
             console.error('Failed to fetch profile', meError)
-            // Still log them in with basic info if /me fails
-            const role: UserRole = 'employee' // default fallback
-            const newUser: AuthUser = {
-              id: response.user?.id || 'EMP-UNKNOWN',
-              name: response.user?.firstName ? `${response.user?.firstName} ${response.user?.lastName}` : normalizedEmail,
-              email: response.user?.email || normalizedEmail,
-              role: role,
-              initials: response.user?.firstName ? `${response.user?.firstName[0]}${response.user?.lastName?.[0] || ''}`.toUpperCase() : normalizedEmail[0].toUpperCase(),
-              department: 'General',
-              designation: 'Employee'
-            }
-            setUser(newUser)
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
-            setIsLoading(false)
-            return { success: true }
           }
+
+          const newUser: AuthUser = {
+            id: profile?.id || response.user?.id || 'EMP-1001',
+            name: profile?.firstName ? `${profile.firstName} ${profile.lastName}` : (response.user?.firstName ? `${response.user?.firstName} ${response.user?.lastName}` : (isAnkitAdmin ? 'Ankit Sethi' : normalizedEmail)),
+            email: profile?.email || response.user?.email || normalizedEmail,
+            role: role,
+            initials: profile?.firstName ? `${profile.firstName[0]}${profile.lastName?.[0] || ''}`.toUpperCase() : (isAnkitAdmin ? 'AS' : normalizedEmail[0].toUpperCase()),
+            department: profile?.employee?.department?.name || (role === 'admin' ? 'Management' : 'Engineering'),
+            designation: role === 'admin' ? 'CEO & Founder' : 'Software Engineer'
+          }
+          
+          setUser(newUser)
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
+          setIsLoading(false)
+          return { success: true }
         }
       } catch (error: any) {
         console.error('API Login failed, trying fallback', error)
-        // If it's a true API error (like 401 Unauthorized), we might want to return early,
-        // but the prompt says "If the API is unreachable (network error / fetch fails), fall back"
-        // For safety, we fall through to the local DB checks.
       }
 
       // 2. Check dynamic employeeStore for newly created employees (Fallback)
@@ -175,16 +171,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }>
             const empMatch = list.find(e => e.email.toLowerCase().trim() === normalizedEmail)
             if (empMatch) {
-              const validPass = empMatch.password || "Emp@123"
+              const validPass = empMatch.password || "kenzo123"
               if (validPass !== password) {
                 setIsLoading(false)
                 return { success: false, error: "Incorrect password. Please try again." }
               }
+
+              const isMatchAdmin = isAnkitAdmin || 
+                                   empMatch.role.toLowerCase().includes("ceo") || 
+                                   empMatch.role.toLowerCase().includes("admin") || 
+                                   empMatch.role.toLowerCase().includes("founder") ||
+                                   empMatch.dept.toLowerCase().includes("management")
+
+              const role: UserRole = isMatchAdmin ? "admin" : "employee"
+
               const newUser: AuthUser = {
                 id: empMatch.id,
                 name: empMatch.name,
                 email: empMatch.email,
-                role: "employee",
+                role: role,
                 initials: empMatch.name.split(" ").map(n => n[0]).join("").toUpperCase(),
                 department: empMatch.dept,
                 designation: empMatch.role,
