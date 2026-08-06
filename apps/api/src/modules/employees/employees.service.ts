@@ -41,16 +41,33 @@ export class EmployeesService {
       });
 
       if (!existingUser) {
-        // Find requested role (super-admin vs employee)
-        const targetSlug = systemRole === 'admin' || systemRole === 'super-admin' ? 'super-admin' : 'employee';
-        
+        // Map systemRole options: Employee, Super_admin, Admin, HR
+        let targetSlug = 'employee';
+        let targetName = 'Employee';
+
+        if (systemRole === 'Super_admin' || systemRole === 'super-admin') {
+          targetSlug = 'super-admin';
+          targetName = 'Super_admin';
+        } else if (systemRole === 'Admin' || systemRole === 'admin') {
+          targetSlug = 'admin';
+          targetName = 'Admin';
+        } else if (systemRole === 'HR' || systemRole === 'hr' || systemRole === 'hr-manager') {
+          targetSlug = 'hr';
+          targetName = 'HR';
+        }
+
         let roleRecord = await this.prisma.role.findFirst({
           where: { tenantId, slug: targetSlug },
         });
 
         if (!roleRecord) {
-          roleRecord = await this.prisma.role.findFirst({
-            where: { tenantId, isSystemRole: true },
+          roleRecord = await this.prisma.role.create({
+            data: {
+              tenantId,
+              name: targetName,
+              slug: targetSlug,
+              isSystemRole: true,
+            },
           });
         }
 

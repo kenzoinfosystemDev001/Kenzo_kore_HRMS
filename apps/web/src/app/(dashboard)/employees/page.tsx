@@ -20,6 +20,7 @@ import {
   updateStoredEmployee,
   deleteStoredEmployee,
   EmployeeRecord,
+  SystemAccessRole,
 } from "@/lib/employee-store"
 
 export default function EmployeesPage() {
@@ -34,7 +35,7 @@ export default function EmployeesPage() {
   const [newPassword, setNewPassword] = useState("kenzo123")
   const [newRole, setNewRole] = useState("")
   const [newDept, setNewDept] = useState("Engineering")
-  const [newSystemRole, setNewSystemRole] = useState<"admin" | "employee">("employee")
+  const [newSystemRole, setNewSystemRole] = useState<SystemAccessRole>("Employee")
   const [isAddOpen, setIsAddOpen] = useState(false)
 
   const handleDelete = (id: string) => {
@@ -50,7 +51,7 @@ export default function EmployeesPage() {
       name: newName,
       email: newEmail,
       password: newPassword || "kenzo123",
-      role: newRole || (newSystemRole === "admin" ? "Administrator" : "Software Engineer"),
+      role: newRole || (newSystemRole === "Employee" ? "Software Engineer" : newSystemRole),
       systemRole: newSystemRole,
       dept: newDept,
       status: "Active",
@@ -62,7 +63,7 @@ export default function EmployeesPage() {
     setNewEmail("")
     setNewPassword("kenzo123")
     setNewRole("")
-    setNewSystemRole("employee")
+    setNewSystemRole("Employee")
     setIsAddOpen(false)
   }
 
@@ -110,7 +111,7 @@ export default function EmployeesPage() {
                   <DialogTitle className="text-foreground flex items-center gap-2">
                     <ShieldCheck className="h-5 w-5 text-blue-500" /> Add New User & Employee Account
                   </DialogTitle>
-                  <DialogDescription className="text-muted-foreground">Configure profile details and assign System Access Level (Admin vs Employee).</DialogDescription>
+                  <DialogDescription className="text-muted-foreground">Configure profile details and assign System Access Role (Employee, Super_admin, Admin, HR).</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleAddEmployee} className="space-y-4 pt-2">
                   <div className="space-y-1">
@@ -124,32 +125,39 @@ export default function EmployeesPage() {
                   <div className="space-y-1">
                     <Label className="text-foreground">Initial Login Password</Label>
                     <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="kenzo123" required className="text-foreground" />
-                    <p className="text-[11px] text-muted-foreground">The user will use this email & password to sign in.</p>
+                    <p className="text-[11px] text-muted-foreground">The employee will use this email & password to sign in.</p>
                   </div>
+
+                  {/* System Access Role Selector */}
                   <div className="space-y-1">
-                    <Label className="text-foreground font-semibold">System Access Level (Role)</Label>
-                    <Select value={newSystemRole} onValueChange={(val: "admin" | "employee") => setNewSystemRole(val)}>
-                      <SelectTrigger className="w-full text-foreground bg-background">
-                        <SelectValue placeholder="Select System Role..." />
+                    <Label className="text-foreground font-bold text-sm flex items-center gap-1.5">
+                      System Access Role
+                    </Label>
+                    <Select value={newSystemRole} onValueChange={(val: SystemAccessRole) => setNewSystemRole(val)}>
+                      <SelectTrigger className="w-full text-foreground bg-background font-medium">
+                        <SelectValue placeholder="Select Role..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="employee">Employee (Self-Service Portal Access)</SelectItem>
-                        <SelectItem value="admin">Administrator (Full System & HR Access)</SelectItem>
+                        <SelectItem value="Employee">Employee (Self-Service Portal Access)</SelectItem>
+                        <SelectItem value="Super_admin">Super_admin (Full Master System Access)</SelectItem>
+                        <SelectItem value="Admin">Admin (Full System & Dashboard Access)</SelectItem>
+                        <SelectItem value="HR">HR (Full HR & Workforce Management Access)</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-[11px] text-muted-foreground">Admin accounts get access to payroll, recruitment, org settings, and employee creation.</p>
+                    <p className="text-[11px] text-muted-foreground">Super_admin, Admin, and HR accounts share full corporate dashboard privileges.</p>
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <Label className="text-foreground">Job Title / Designation</Label>
-                      <Input value={newRole} onChange={e => setNewRole(e.target.value)} placeholder="e.g. Lead Developer" className="text-foreground" />
+                      <Label className="text-foreground">Designation / Role</Label>
+                      <Input value={newRole} onChange={e => setNewRole(e.target.value)} placeholder="e.g. Senior Frontend Engineer" className="text-foreground" />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-foreground">Department</Label>
                       <Input value={newDept} onChange={e => setNewDept(e.target.value)} placeholder="Engineering" className="text-foreground" />
                     </div>
                   </div>
-                  <Button type="submit" className="w-full font-bold">Create Account</Button>
+                  <Button type="submit" className="w-full font-bold">Create Employee Account</Button>
                 </form>
               </DialogContent>
             </Dialog>
@@ -178,8 +186,8 @@ export default function EmployeesPage() {
               <TableRow className="border-border">
                 <TableHead className="font-bold text-muted-foreground">EMP ID</TableHead>
                 <TableHead className="font-bold text-muted-foreground">Employee</TableHead>
-                <TableHead className="font-bold text-muted-foreground">Access Level</TableHead>
-                <TableHead className="font-bold text-muted-foreground">Role & Department</TableHead>
+                <TableHead className="font-bold text-muted-foreground">System Role</TableHead>
+                <TableHead className="font-bold text-muted-foreground">Designation & Dept</TableHead>
                 <TableHead className="font-bold text-muted-foreground">Joining Date</TableHead>
                 <TableHead className="font-bold text-muted-foreground">Status</TableHead>
                 <TableHead className="text-right font-bold text-muted-foreground">{isAdmin ? 'Admin Actions' : 'View'}</TableHead>
@@ -187,7 +195,13 @@ export default function EmployeesPage() {
             </TableHeader>
             <TableBody>
               {filteredList.map((emp) => {
-                const isAdminAccount = emp.systemRole === "admin" || emp.email.toLowerCase().includes("ankit.sethi")
+                const sysRole = emp.systemRole || (emp.email.toLowerCase().includes("ankit.sethi") ? "Super_admin" : "Employee")
+                const badgeStyle = 
+                  sysRole === "Super_admin" ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30 font-extrabold" :
+                  sysRole === "Admin" ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30 font-bold" :
+                  sysRole === "HR" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold" :
+                  "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 font-medium"
+
                 return (
                   <TableRow key={emp.id} className="hover:bg-muted/40 border-border">
                     <TableCell className="font-mono text-xs font-semibold text-primary">{emp.id}</TableCell>
@@ -205,8 +219,8 @@ export default function EmployeesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={isAdminAccount ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 font-semibold" : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 font-medium"}>
-                        {isAdminAccount ? "Administrator" : "Employee"}
+                      <Badge className={badgeStyle}>
+                        {sysRole}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -261,10 +275,12 @@ export default function EmployeesPage() {
       {/* Edit Employee Dialog */}
       {isAdmin && editingEmp && (
         <Dialog open={!!editingEmp} onOpenChange={(open) => !open && setEditingEmp(null)}>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle className="text-foreground">Edit Employee Account & System Permissions</DialogTitle>
-              <DialogDescription className="text-muted-foreground">Update details and access level for {editingEmp.name} ({editingEmp.id}).</DialogDescription>
+              <DialogTitle className="text-foreground flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-amber-500" /> Edit Account & System Permissions
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">Update details and access role for {editingEmp.name} ({editingEmp.id}).</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="space-y-1">
@@ -272,30 +288,37 @@ export default function EmployeesPage() {
                 <Input className="text-foreground" value={editingEmp.name} onChange={e => setEditingEmp({ ...editingEmp, name: e.target.value })} />
               </div>
               <div className="space-y-1">
-                <Label className="text-foreground">Email</Label>
+                <Label className="text-foreground">Work Email</Label>
                 <Input className="text-foreground" value={editingEmp.email} onChange={e => setEditingEmp({ ...editingEmp, email: e.target.value })} />
               </div>
+
+              {/* System Access Role Selector */}
               <div className="space-y-1">
-                <Label className="text-foreground font-semibold">System Access Level (Role)</Label>
-                <Select value={editingEmp.systemRole || "employee"} onValueChange={(val: "admin" | "employee") => setEditingEmp({ ...editingEmp, systemRole: val })}>
-                  <SelectTrigger className="w-full text-foreground bg-background">
-                    <SelectValue placeholder="Select Access Level..." />
+                <Label className="text-foreground font-bold text-sm">System Access Role</Label>
+                <Select value={editingEmp.systemRole || "Employee"} onValueChange={(val: SystemAccessRole) => setEditingEmp({ ...editingEmp, systemRole: val })}>
+                  <SelectTrigger className="w-full text-foreground bg-background font-medium">
+                    <SelectValue placeholder="Select Access Role..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="employee">Employee (Self-Service Portal Access)</SelectItem>
-                    <SelectItem value="admin">Administrator (Full System & HR Access)</SelectItem>
+                    <SelectItem value="Employee">Employee (Self-Service Portal Access)</SelectItem>
+                    <SelectItem value="Super_admin">Super_admin (Full Master System Access)</SelectItem>
+                    <SelectItem value="Admin">Admin (Full System & Dashboard Access)</SelectItem>
+                    <SelectItem value="HR">HR (Full HR & Workforce Management Access)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <Label className="text-foreground">Job Title / Role</Label>
-                <Input className="text-foreground" value={editingEmp.role} onChange={e => setEditingEmp({ ...editingEmp, role: e.target.value })} />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-foreground">Job Title / Designation</Label>
+                  <Input className="text-foreground" value={editingEmp.role} onChange={e => setEditingEmp({ ...editingEmp, role: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-foreground">Department</Label>
+                  <Input className="text-foreground" value={editingEmp.dept} onChange={e => setEditingEmp({ ...editingEmp, dept: e.target.value })} />
+                </div>
               </div>
-              <div className="space-y-1">
-                <Label className="text-foreground">Department</Label>
-                <Input className="text-foreground" value={editingEmp.dept} onChange={e => setEditingEmp({ ...editingEmp, dept: e.target.value })} />
-              </div>
-              <Button onClick={handleSaveEdit} className="w-full">Save Changes</Button>
+              <Button onClick={handleSaveEdit} className="w-full font-bold">Save Changes</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -303,5 +326,6 @@ export default function EmployeesPage() {
     </div>
   )
 }
+
 
 

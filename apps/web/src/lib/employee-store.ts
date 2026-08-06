@@ -1,12 +1,14 @@
 "use client"
 
+export type SystemAccessRole = "Employee" | "Super_admin" | "Admin" | "HR"
+
 export interface EmployeeRecord {
   id: string
   name: string
   email: string
   password?: string
   role: string
-  systemRole?: "admin" | "employee" | "hr-manager"
+  systemRole?: SystemAccessRole
   dept: string
   status: string
   joinDate: string
@@ -37,7 +39,7 @@ export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
     email: "Ankit.sethi@kenzoinfosystems.com",
     password: "kenzo123",
     role: "CEO & Founder",
-    systemRole: "admin",
+    systemRole: "Super_admin",
     dept: "Management",
     status: "Active",
     joinDate: "Jan 01, 2020",
@@ -64,7 +66,7 @@ export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
     email: "Sujal.kumar@kenzoinfosystems.com",
     password: "kenzo123",
     role: "Software Engineer",
-    systemRole: "employee",
+    systemRole: "Employee",
     dept: "Engineering",
     status: "Active",
     joinDate: "Jan 15, 2024",

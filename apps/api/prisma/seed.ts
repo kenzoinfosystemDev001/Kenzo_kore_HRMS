@@ -60,11 +60,35 @@ async function main() {
     }
   }
 
+  const superAdminRole = await prisma.role.create({
+    data: {
+      tenantId: tenant.id,
+      name: 'Super_admin',
+      slug: 'super-admin',
+      isSystemRole: true,
+      rolePermissions: {
+        create: permissions.map(p => ({ permissionId: p.id })),
+      },
+    },
+  });
+
   const adminRole = await prisma.role.create({
     data: {
       tenantId: tenant.id,
-      name: 'Super Admin',
-      slug: 'super-admin',
+      name: 'Admin',
+      slug: 'admin',
+      isSystemRole: true,
+      rolePermissions: {
+        create: permissions.map(p => ({ permissionId: p.id })),
+      },
+    },
+  });
+
+  const hrRole = await prisma.role.create({
+    data: {
+      tenantId: tenant.id,
+      name: 'HR',
+      slug: 'hr',
       isSystemRole: true,
       rolePermissions: {
         create: permissions.map(p => ({ permissionId: p.id })),
@@ -122,7 +146,7 @@ async function main() {
       emailVerified: true,
       employeeId: adminEmployee.id,
       userRoles: {
-        create: [{ roleId: adminRole.id }],
+        create: [{ roleId: superAdminRole.id }],
       },
     },
   });

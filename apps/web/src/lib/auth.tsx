@@ -130,7 +130,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             profile = await apiClient.get<any>('/auth/me')
             const hasAdminRole = isAnkitAdmin || profile.userRoles?.some(
-              (ur: any) => ur.role?.slug === 'super-admin' || ur.role?.name === 'Super Admin' || ur.role?.slug === 'admin' || ur.role?.name === 'Admin'
+              (ur: any) => {
+                const s = (ur.role?.slug || '').toLowerCase()
+                const n = (ur.role?.name || '').toLowerCase()
+                return s === 'super-admin' || s === 'admin' || s === 'hr' || s === 'hr-manager' || n === 'super_admin' || n === 'admin' || n === 'hr'
+              }
             ) || false
             role = hasAdminRole ? 'admin' : 'employee'
           } catch (meError) {
@@ -144,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: role,
             initials: profile?.firstName ? `${profile.firstName[0]}${profile.lastName?.[0] || ''}`.toUpperCase() : (isAnkitAdmin ? 'AS' : normalizedEmail[0].toUpperCase()),
             department: profile?.employee?.department?.name || (role === 'admin' ? 'Management' : 'Engineering'),
-            designation: role === 'admin' ? 'CEO & Founder' : 'Software Engineer'
+            designation: role === 'admin' ? 'Administrator' : 'Employee'
           }
           
           setUser(newUser)
@@ -167,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: string
               password?: string
               role: string
+              systemRole?: string
               dept: string
             }>
             const empMatch = list.find(e => e.email.toLowerCase().trim() === normalizedEmail)
@@ -177,7 +182,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 return { success: false, error: "Incorrect password. Please try again." }
               }
 
+              const matchSysRole = (empMatch.systemRole || '').toLowerCase()
               const isMatchAdmin = isAnkitAdmin || 
+                                   matchSysRole === "super_admin" ||
+                                   matchSysRole === "super-admin" ||
+                                   matchSysRole === "admin" ||
+                                   matchSysRole === "hr" ||
                                    empMatch.role.toLowerCase().includes("ceo") || 
                                    empMatch.role.toLowerCase().includes("admin") || 
                                    empMatch.role.toLowerCase().includes("founder") ||

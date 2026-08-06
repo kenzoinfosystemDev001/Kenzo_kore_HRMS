@@ -32,10 +32,39 @@ export class AuthService {
     const user = await this.validateUser(dto.email, dto.password);
     const tokens = await this.generateTokens(user);
     await this.prisma.user.update({ where: { id: user.id }, data: { updatedAt: new Date() } });
+
+    const hasAdminAccess = user.userRoles?.some((ur: any) => {
+      const s = ur.role?.slug?.toLowerCase() || '';
+      const n = ur.role?.name?.toLowerCase() || '';
+      return (
+        s === 'super-admin' ||
+        s === 'admin' ||
+        s === 'hr' ||
+        s === 'hr-manager' ||
+        n === 'super_admin' ||
+        n === 'super admin' ||
+        n === 'admin' ||
+        n === 'hr'
+      );
+    });
+
+    const primaryRole = user.userRoles?.[0]?.role?.name || (hasAdminAccess ? 'Admin' : 'Employee');
+
     return {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, tenantId: user.tenantId, avatarUrl: user.avatarUrl },
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        tenantId: user.tenantId,
+        avatarUrl: user.avatarUrl,
+        role: primaryRole,
+        systemRole: primaryRole,
+        hasAdminAccess,
+        userRoles: user.userRoles,
+      },
     };
   }
 
