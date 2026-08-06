@@ -19,28 +19,28 @@ export interface AuthUser {
 
 // ─── Hardcoded User Database (production would use API) ─────
 const USER_DB: Record<string, { password: string; user: AuthUser }> = {
-  "admin@kenzo.com": {
-    password: "Admin@123",
+  "ankit.sethi@kenzoinfosystems.com": {
+    password: "kenzo123",
     user: {
       id: "EMP-1001",
       name: "Ankit Sethi",
-      email: "admin@kenzo.com",
+      email: "Ankit.sethi@kenzoinfosystems.com",
       role: "admin",
       initials: "AS",
       department: "Management",
       designation: "CEO & Founder",
     },
   },
-  "employee@kenzo.com": {
-    password: "Emp@123",
+  "sujal.kumar@kenzoinfosystems.com": {
+    password: "kenzo123",
     user: {
       id: "EMP-1002",
       name: "Sujal Kumar",
-      email: "employee@kenzo.com",
+      email: "Sujal.kumar@kenzoinfosystems.com",
       role: "employee",
       initials: "SK",
       department: "Engineering",
-      designation: "Software Architect",
+      designation: "Software Engineer",
     },
   },
 }

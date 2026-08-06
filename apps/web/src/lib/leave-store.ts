@@ -19,7 +19,7 @@ export const DEFAULT_LEAVE_REQUESTS: LeaveRequestRecord[] = [
   {
     id: "LV-2026-901",
     employeeName: "Sujal Kumar",
-    employeeEmail: "employee@kenzo.com",
+    employeeEmail: "Sujal.kumar@kenzoinfosystems.com",
     leaveType: "Casual Leave",
     days: 1,
     startDate: "2026-08-10",

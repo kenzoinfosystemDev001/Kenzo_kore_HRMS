@@ -33,7 +33,8 @@ export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
   {
     id: "EMP-1001",
     name: "Ankit Sethi",
-    email: "admin@kenzo.com",
+    email: "Ankit.sethi@kenzoinfosystems.com",
+    password: "kenzo123",
     role: "CEO & Founder",
     dept: "Management",
     status: "Active",
@@ -58,8 +59,9 @@ export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
   {
     id: "EMP-1002",
     name: "Sujal Kumar",
-    email: "employee@kenzo.com",
-    role: "Software Architect",
+    email: "Sujal.kumar@kenzoinfosystems.com",
+    password: "kenzo123",
+    role: "Software Engineer",
     dept: "Engineering",
     status: "Active",
     joinDate: "Jan 15, 2024",
@@ -88,11 +90,12 @@ export function getStoredEmployees(): EmployeeRecord[] {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as EmployeeRecord[]
-      if (parsed && parsed.length > 0) return parsed
+      if (parsed && parsed.length > 0 && parsed.some(e => e.email.toLowerCase() === "ankit.sethi@kenzoinfosystems.com")) return parsed
     }
   } catch {
     // Fallback
   }
+  saveStoredEmployees(DEFAULT_EMPLOYEES)
   return DEFAULT_EMPLOYEES
 }
 
