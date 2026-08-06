@@ -26,7 +26,7 @@ jobs:
         run: npm ci
       
       - name: Generate Prisma Client
-        run: npx prisma generate --schema=apps/api/prisma/schema.prisma
+        run: npx prisma@5 generate --schema=apps/api/prisma/schema.prisma
       
       - name: Lint frontend
         run: npm run lint -w apps/web
@@ -79,7 +79,7 @@ jobs:
         run: npm ci
       
       - name: Generate Prisma Client
-        run: npx prisma generate --schema=apps/api/prisma/schema.prisma
+        run: npx prisma@5 generate --schema=apps/api/prisma/schema.prisma
       
       - name: Run backend tests
         run: npm run test -w apps/api -- --coverage --passWithNoTests
@@ -106,7 +106,7 @@ jobs:
         run: npm ci
       
       - name: Generate Prisma Client
-        run: npx prisma generate --schema=apps/api/prisma/schema.prisma
+        run: npx prisma@5 generate --schema=apps/api/prisma/schema.prisma
       
       - name: Build frontend
         run: npm run build -w apps/web
