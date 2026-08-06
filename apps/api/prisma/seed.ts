@@ -147,7 +147,27 @@ async function main() {
     data: { tenantId: tenant.id, organizationId: org.id, name: 'Executive Operations', code: 'EXEC' },
   });
 
-  // 7. Create Employee Profiles
+  const deptSales = await prisma.department.create({
+    data: { tenantId: tenant.id, organizationId: org.id, name: 'Field Sales & Marketing', code: 'SALES' },
+  });
+
+  // 7. Create Employee: Laxmi Narayan
+  const laxmiPasswordHash = await bcrypt.hash('Laxmi@123', 12);
+  const laxmiUser = await prisma.user.create({
+    data: {
+      tenantId: tenant.id,
+      email: 'laxmi.narayan@kenzoinfosystems.com',
+      passwordHash: laxmiPasswordHash,
+      firstName: 'Laxmi',
+      lastName: 'Narayan',
+      emailVerified: true,
+      userRoles: {
+        create: [{ roleId: empRole.id }],
+      },
+    },
+  });
+
+  // 8. Create Employee Profiles
   const emp1 = await prisma.employee.create({
     data: {
       tenantId: tenant.id,
@@ -184,7 +204,25 @@ async function main() {
     data: { employeeId: emp2.id },
   });
 
-  console.log('Kenzo Enterprise Seed completed successfully! Ankit Sethi (Admin) & Sujal Kumar (Employee) created.');
+  const emp3 = await prisma.employee.create({
+    data: {
+      tenantId: tenant.id,
+      organizationId: org.id,
+      employeeCode: 'EMP-7297',
+      firstName: 'Laxmi',
+      lastName: 'Narayan',
+      workEmail: 'laxmi.narayan@kenzoinfosystems.com',
+      departmentId: deptSales.id,
+      dateOfJoining: new Date('2026-08-08'),
+      employmentStatus: 'active',
+    },
+  });
+  await prisma.user.update({
+    where: { id: laxmiUser.id },
+    data: { employeeId: emp3.id },
+  });
+
+  console.log('Kenzo Enterprise Seed completed successfully! Ankit Sethi, Sujal Kumar, and Laxmi Narayan created in PostgreSQL DB.');
 }
 
 main()
