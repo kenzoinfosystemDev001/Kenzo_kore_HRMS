@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { Users, Plus, Download, Edit, Trash2, Eye } from "lucide-react"
+import { Users, Plus, Download, Edit, Trash2, Eye, ShieldCheck } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/lib/auth"
 import {
   getStoredEmployees,
@@ -30,9 +31,10 @@ export default function EmployeesPage() {
   // New Employee Form State
   const [newName, setNewName] = useState("")
   const [newEmail, setNewEmail] = useState("")
-  const [newPassword, setNewPassword] = useState("Emp@123")
+  const [newPassword, setNewPassword] = useState("kenzo123")
   const [newRole, setNewRole] = useState("")
   const [newDept, setNewDept] = useState("Engineering")
+  const [newSystemRole, setNewSystemRole] = useState<"admin" | "employee">("employee")
   const [isAddOpen, setIsAddOpen] = useState(false)
 
   const handleDelete = (id: string) => {
@@ -47,8 +49,9 @@ export default function EmployeesPage() {
       id: `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
       name: newName,
       email: newEmail,
-      password: newPassword || "Emp@123",
-      role: newRole || "Software Engineer",
+      password: newPassword || "kenzo123",
+      role: newRole || (newSystemRole === "admin" ? "Administrator" : "Software Engineer"),
+      systemRole: newSystemRole,
       dept: newDept,
       status: "Active",
       joinDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
@@ -57,8 +60,9 @@ export default function EmployeesPage() {
     setEmployeesList(updated)
     setNewName("")
     setNewEmail("")
-    setNewPassword("Emp@123")
+    setNewPassword("kenzo123")
     setNewRole("")
+    setNewSystemRole("employee")
     setIsAddOpen(false)
   }
 
@@ -98,13 +102,15 @@ export default function EmployeesPage() {
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-md shadow-primary/20">
-                  <Plus className="mr-2 h-4 w-4" /> Add Employee
+                  <Plus className="mr-2 h-4 w-4" /> Add Employee Account
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-lg">
                 <DialogHeader>
-                  <DialogTitle className="text-foreground">Add New Employee Account</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">Create a new employee profile with system login credentials.</DialogDescription>
+                  <DialogTitle className="text-foreground flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-blue-500" /> Add New User & Employee Account
+                  </DialogTitle>
+                  <DialogDescription className="text-muted-foreground">Configure profile details and assign System Access Level (Admin vs Employee).</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleAddEmployee} className="space-y-4 pt-2">
                   <div className="space-y-1">
@@ -117,18 +123,33 @@ export default function EmployeesPage() {
                   </div>
                   <div className="space-y-1">
                     <Label className="text-foreground">Initial Login Password</Label>
-                    <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Emp@123" required className="text-foreground" />
-                    <p className="text-[11px] text-muted-foreground">The employee will use this email & password to sign in.</p>
+                    <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="kenzo123" required className="text-foreground" />
+                    <p className="text-[11px] text-muted-foreground">The user will use this email & password to sign in.</p>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-foreground">Designation / Role</Label>
-                    <Input value={newRole} onChange={e => setNewRole(e.target.value)} placeholder="e.g. Senior Frontend Engineer" className="text-foreground" />
+                    <Label className="text-foreground font-semibold">System Access Level (Role)</Label>
+                    <Select value={newSystemRole} onValueChange={(val: "admin" | "employee") => setNewSystemRole(val)}>
+                      <SelectTrigger className="w-full text-foreground bg-background">
+                        <SelectValue placeholder="Select System Role..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="employee">Employee (Self-Service Portal Access)</SelectItem>
+                        <SelectItem value="admin">Administrator (Full System & HR Access)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground">Admin accounts get access to payroll, recruitment, org settings, and employee creation.</p>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-foreground">Department</Label>
-                    <Input value={newDept} onChange={e => setNewDept(e.target.value)} placeholder="Engineering" className="text-foreground" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-foreground">Job Title / Designation</Label>
+                      <Input value={newRole} onChange={e => setNewRole(e.target.value)} placeholder="e.g. Lead Developer" className="text-foreground" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-foreground">Department</Label>
+                      <Input value={newDept} onChange={e => setNewDept(e.target.value)} placeholder="Engineering" className="text-foreground" />
+                    </div>
                   </div>
-                  <Button type="submit" className="w-full">Create Employee Account</Button>
+                  <Button type="submit" className="w-full font-bold">Create Account</Button>
                 </form>
               </DialogContent>
             </Dialog>
@@ -157,6 +178,7 @@ export default function EmployeesPage() {
               <TableRow className="border-border">
                 <TableHead className="font-bold text-muted-foreground">EMP ID</TableHead>
                 <TableHead className="font-bold text-muted-foreground">Employee</TableHead>
+                <TableHead className="font-bold text-muted-foreground">Access Level</TableHead>
                 <TableHead className="font-bold text-muted-foreground">Role & Department</TableHead>
                 <TableHead className="font-bold text-muted-foreground">Joining Date</TableHead>
                 <TableHead className="font-bold text-muted-foreground">Status</TableHead>
@@ -164,65 +186,73 @@ export default function EmployeesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredList.map((emp) => (
-                <TableRow key={emp.id} className="hover:bg-muted/40 border-border">
-                  <TableCell className="font-mono text-xs font-semibold text-primary">{emp.id}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9 border border-primary/20">
-                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                          {emp.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-bold text-foreground text-sm">{emp.name}</div>
-                        <div className="text-xs text-muted-foreground">{emp.email}</div>
+              {filteredList.map((emp) => {
+                const isAdminAccount = emp.systemRole === "admin" || emp.email.toLowerCase().includes("ankit.sethi")
+                return (
+                  <TableRow key={emp.id} className="hover:bg-muted/40 border-border">
+                    <TableCell className="font-mono text-xs font-semibold text-primary">{emp.id}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9 border border-primary/20">
+                          <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                            {emp.name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-bold text-foreground text-sm">{emp.name}</div>
+                          <div className="text-xs text-muted-foreground">{emp.email}</div>
+                        </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-foreground text-xs font-medium">{emp.role}</div>
-                    <div className="text-[11px] text-muted-foreground">{emp.dept}</div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">{emp.joinDate}</TableCell>
-                  <TableCell>
-                    <Badge className={emp.status === "Active" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"}>
-                      {emp.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link href={`/employees/${emp.id}`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
-
-                      {isAdmin && (
-                        <>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
-                            onClick={() => setEditingEmp(emp)}
-                          >
-                            <Edit className="h-4 w-4" />
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={isAdminAccount ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 font-semibold" : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 font-medium"}>
+                        {isAdminAccount ? "Administrator" : "Employee"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-foreground text-xs font-medium">{emp.role}</div>
+                      <div className="text-[11px] text-muted-foreground">{emp.dept}</div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{emp.joinDate}</TableCell>
+                    <TableCell>
+                      <Badge className={emp.status === "Active" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"}>
+                        {emp.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link href={`/employees/${emp.id}`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10">
+                            <Eye className="h-4 w-4" />
                           </Button>
+                        </Link>
 
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-500/10"
-                            onClick={() => handleDelete(emp.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        {isAdmin && (
+                          <>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
+                              onClick={() => setEditingEmp(emp)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-500/10"
+                              onClick={() => handleDelete(emp.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -233,8 +263,8 @@ export default function EmployeesPage() {
         <Dialog open={!!editingEmp} onOpenChange={(open) => !open && setEditingEmp(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-foreground">Edit Employee Profile</DialogTitle>
-              <DialogDescription className="text-muted-foreground">Update details for {editingEmp.name} ({editingEmp.id}).</DialogDescription>
+              <DialogTitle className="text-foreground">Edit Employee Account & System Permissions</DialogTitle>
+              <DialogDescription className="text-muted-foreground">Update details and access level for {editingEmp.name} ({editingEmp.id}).</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="space-y-1">
@@ -246,7 +276,19 @@ export default function EmployeesPage() {
                 <Input className="text-foreground" value={editingEmp.email} onChange={e => setEditingEmp({ ...editingEmp, email: e.target.value })} />
               </div>
               <div className="space-y-1">
-                <Label className="text-foreground">Role</Label>
+                <Label className="text-foreground font-semibold">System Access Level (Role)</Label>
+                <Select value={editingEmp.systemRole || "employee"} onValueChange={(val: "admin" | "employee") => setEditingEmp({ ...editingEmp, systemRole: val })}>
+                  <SelectTrigger className="w-full text-foreground bg-background">
+                    <SelectValue placeholder="Select Access Level..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="employee">Employee (Self-Service Portal Access)</SelectItem>
+                    <SelectItem value="admin">Administrator (Full System & HR Access)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-foreground">Job Title / Role</Label>
                 <Input className="text-foreground" value={editingEmp.role} onChange={e => setEditingEmp({ ...editingEmp, role: e.target.value })} />
               </div>
               <div className="space-y-1">
@@ -261,4 +303,5 @@ export default function EmployeesPage() {
     </div>
   )
 }
+
 

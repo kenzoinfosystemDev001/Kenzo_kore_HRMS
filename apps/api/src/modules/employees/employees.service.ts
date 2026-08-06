@@ -9,7 +9,7 @@ export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, createEmployeeDto: CreateEmployeeDto) {
-    const { firstName, lastName, email, password, phone, departmentId, designationId, branchId, dateOfJoining, employmentType } = createEmployeeDto;
+    const { firstName, lastName, email, password, phone, departmentId, designationId, branchId, dateOfJoining, employmentType, systemRole } = createEmployeeDto;
 
     const pwd = password || 'Emp@123';
     const passwordHash = await bcrypt.hash(pwd, 10);
@@ -34,14 +34,27 @@ export class EmployeesService {
       },
     });
 
-    // 2. Create User Account in PostgreSQL users table
+    // 2. Create User Account in PostgreSQL users table with explicit Role Assignment
     if (email) {
       const existingUser = await this.prisma.user.findFirst({
         where: { tenantId, email: email.toLowerCase().trim() },
       });
 
       if (!existingUser) {
-        const user = await this.prisma.user.create({
+        // Find requested role (super-admin vs employee)
+        const targetSlug = systemRole === 'admin' || systemRole === 'super-admin' ? 'super-admin' : 'employee';
+        
+        let roleRecord = await this.prisma.role.findFirst({
+          where: { tenantId, slug: targetSlug },
+        });
+
+        if (!roleRecord) {
+          roleRecord = await this.prisma.role.findFirst({
+            where: { tenantId, isSystemRole: true },
+          });
+        }
+
+        await this.prisma.user.create({
           data: {
             tenantId,
             email: email.toLowerCase().trim(),
@@ -50,6 +63,11 @@ export class EmployeesService {
             lastName,
             emailVerified: true,
             employeeId: employee.id,
+            userRoles: roleRecord
+              ? {
+                  create: [{ roleId: roleRecord.id }],
+                }
+              : undefined,
           },
         });
       }

@@ -6,6 +6,7 @@ export interface EmployeeRecord {
   email: string
   password?: string
   role: string
+  systemRole?: "admin" | "employee" | "hr-manager"
   dept: string
   status: string
   joinDate: string
@@ -36,6 +37,7 @@ export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
     email: "Ankit.sethi@kenzoinfosystems.com",
     password: "kenzo123",
     role: "CEO & Founder",
+    systemRole: "admin",
     dept: "Management",
     status: "Active",
     joinDate: "Jan 01, 2020",
@@ -62,6 +64,7 @@ export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
     email: "Sujal.kumar@kenzoinfosystems.com",
     password: "kenzo123",
     role: "Software Engineer",
+    systemRole: "employee",
     dept: "Engineering",
     status: "Active",
     joinDate: "Jan 15, 2024",
