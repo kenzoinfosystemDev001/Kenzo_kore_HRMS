@@ -116,15 +116,15 @@ export default function EmployeesPage() {
                 <form onSubmit={handleAddEmployee} className="space-y-4 pt-2">
                   <div className="space-y-1">
                     <Label className="text-foreground">Full Name</Label>
-                    <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Sarah Connor" required className="text-foreground" />
+                    <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="" required className="text-foreground" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-foreground">Work Email (Login Username)</Label>
-                    <Input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="sarah.c@kenzo.com" required className="text-foreground" />
+                    <Input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="" required className="text-foreground" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-foreground">Initial Login Password</Label>
-                    <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="kenzo123" required className="text-foreground" />
+                    <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="" required className="text-foreground" />
                     <p className="text-[11px] text-muted-foreground">The employee will use this email & password to sign in.</p>
                   </div>
 
@@ -150,11 +150,11 @@ export default function EmployeesPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label className="text-foreground">Designation / Role</Label>
-                      <Input value={newRole} onChange={e => setNewRole(e.target.value)} placeholder="e.g. Senior Frontend Engineer" className="text-foreground" />
+                      <Input value={newRole} onChange={e => setNewRole(e.target.value)} placeholder="" className="text-foreground" />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-foreground">Department</Label>
-                      <Input value={newDept} onChange={e => setNewDept(e.target.value)} placeholder="Engineering" className="text-foreground" />
+                      <Input value={newDept} onChange={e => setNewDept(e.target.value)} placeholder="" className="text-foreground" />
                     </div>
                   </div>
                   <Button type="submit" className="w-full font-bold">Create Employee Account</Button>

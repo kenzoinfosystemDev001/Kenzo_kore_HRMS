@@ -96,29 +96,29 @@ export default function EmployeeProfilePage() {
 
                   <div className="space-y-1">
                     <Label>Current Address</Label>
-                    <Input value={formData.address || ""} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="A2 B59 Near Hanuman mandir phase 1..." />
+                    <Input value={formData.address || ""} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="" />
                   </div>
                   <div className="space-y-1">
                     <Label>Permanent Address</Label>
-                    <Input value={formData.permanentAddress || ""} onChange={e => setFormData({ ...formData, permanentAddress: e.target.value })} placeholder="Permanent home address..." />
+                    <Input value={formData.permanentAddress || ""} onChange={e => setFormData({ ...formData, permanentAddress: e.target.value })} placeholder="" />
                   </div>
 
                   <div className="space-y-1">
                     <Label>Primary Phone Number</Label>
-                    <Input value={formData.phone || ""} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="6207210784" />
+                    <Input value={formData.phone || ""} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="" />
                   </div>
                   <div className="space-y-1">
                     <Label>Emergency Contact Number</Label>
-                    <Input value={formData.emergencyPhone || ""} onChange={e => setFormData({ ...formData, emergencyPhone: e.target.value })} placeholder="9835123735" />
+                    <Input value={formData.emergencyPhone || ""} onChange={e => setFormData({ ...formData, emergencyPhone: e.target.value })} placeholder="" />
                   </div>
 
                   <div className="space-y-1">
                     <Label>Personal Mail</Label>
-                    <Input type="email" value={formData.personalEmail || ""} onChange={e => setFormData({ ...formData, personalEmail: e.target.value })} placeholder="sujalreal983@gmail.com" />
+                    <Input type="email" value={formData.personalEmail || ""} onChange={e => setFormData({ ...formData, personalEmail: e.target.value })} placeholder="" />
                   </div>
                   <div className="space-y-1">
                     <Label>Govt ID Type</Label>
-                    <Select value={formData.govtIdType || "Adhaar"} onValueChange={v => setFormData({ ...formData, govtIdType: v })}>
+                    <Select value={formData.govtIdType || ""} onValueChange={v => setFormData({ ...formData, govtIdType: v })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select ID Type" />
                       </SelectTrigger>
@@ -132,11 +132,11 @@ export default function EmployeeProfilePage() {
 
                   <div className="space-y-1">
                     <Label>Govt ID Value</Label>
-                    <Input value={formData.govtIdValue || ""} onChange={e => setFormData({ ...formData, govtIdValue: e.target.value })} placeholder="591730412902" />
+                    <Input value={formData.govtIdValue || ""} onChange={e => setFormData({ ...formData, govtIdValue: e.target.value })} placeholder="" />
                   </div>
                   <div className="space-y-1">
                     <Label>Marital Status</Label>
-                    <Select value={formData.maritalStatus || "Single"} onValueChange={v => setFormData({ ...formData, maritalStatus: v })}>
+                    <Select value={formData.maritalStatus || ""} onValueChange={v => setFormData({ ...formData, maritalStatus: v })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Status" />
                       </SelectTrigger>
@@ -150,7 +150,7 @@ export default function EmployeeProfilePage() {
 
                   <div className="space-y-1">
                     <Label>Dependent Nominee Name</Label>
-                    <Input value={formData.dependentNominee || ""} onChange={e => setFormData({ ...formData, dependentNominee: e.target.value })} placeholder="e.g. Spouse / Parent / Child Name" />
+                    <Input value={formData.dependentNominee || ""} onChange={e => setFormData({ ...formData, dependentNominee: e.target.value })} placeholder="" />
                   </div>
                   <div className="space-y-1">
                     <Label>Dependent Nominee DOB</Label>
@@ -159,31 +159,31 @@ export default function EmployeeProfilePage() {
 
                   <div className="space-y-1">
                     <Label>Highest Qualification</Label>
-                    <Input value={formData.qualification || ""} onChange={e => setFormData({ ...formData, qualification: e.target.value })} placeholder="e.g. B.Tech / MBA / Ph.D" />
+                    <Input value={formData.qualification || ""} onChange={e => setFormData({ ...formData, qualification: e.target.value })} placeholder="" />
                   </div>
                   <div className="space-y-1">
                     <Label>Score Card / Rating</Label>
-                    <Input value={formData.scoreCard || ""} onChange={e => setFormData({ ...formData, scoreCard: e.target.value })} placeholder="e.g. Performance Rating (95/100)" />
+                    <Input value={formData.scoreCard || ""} onChange={e => setFormData({ ...formData, scoreCard: e.target.value })} placeholder="" />
                   </div>
 
                   <div className="space-y-1">
                     <Label>Medical Issues</Label>
-                    <Input value={formData.medicalIssues || "None"} onChange={e => setFormData({ ...formData, medicalIssues: e.target.value })} />
+                    <Input value={formData.medicalIssues || ""} onChange={e => setFormData({ ...formData, medicalIssues: e.target.value })} placeholder="" />
                   </div>
                   <div className="space-y-1">
                     <Label>Medication</Label>
-                    <Input value={formData.medication || "None"} onChange={e => setFormData({ ...formData, medication: e.target.value })} />
+                    <Input value={formData.medication || ""} onChange={e => setFormData({ ...formData, medication: e.target.value })} placeholder="" />
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <Label>Medical History Notes</Label>
-                  <textarea className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={formData.medicalHistory || ""} onChange={e => setFormData({ ...formData, medicalHistory: e.target.value })} placeholder="Surgeries, chronic conditions, or medical history notes..." />
+                  <textarea className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={formData.medicalHistory || ""} onChange={e => setFormData({ ...formData, medicalHistory: e.target.value })} placeholder="" />
                 </div>
 
                 <div className="space-y-1">
                   <Label>Documents & Verification Record Link</Label>
-                  <Input value={formData.documents || ""} onChange={e => setFormData({ ...formData, documents: e.target.value })} placeholder="Link to employee document records / drive / verification IDs" />
+                  <Input value={formData.documents || ""} onChange={e => setFormData({ ...formData, documents: e.target.value })} placeholder="" />
                 </div>
 
                 <Button type="submit" className="w-full bg-primary text-primary-foreground font-semibold">
