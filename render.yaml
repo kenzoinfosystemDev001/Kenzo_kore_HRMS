@@ -10,14 +10,4 @@ services:
       - key: NODE_VERSION
         value: 20.14.0
 
-  # Next.js Frontend
-  - type: web
-    name: kenzo-hrms-web
-    env: node
-    plan: free
-    buildCommand: npm install && npm run build -w apps/web
-    startCommand: npm run start -w apps/web
-    envVars:
-      - key: NODE_VERSION
-        value: 20.14.0
 
