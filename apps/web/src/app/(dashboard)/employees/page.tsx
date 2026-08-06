@@ -30,6 +30,7 @@ export default function EmployeesPage() {
   // New Employee Form State
   const [newName, setNewName] = useState("")
   const [newEmail, setNewEmail] = useState("")
+  const [newPassword, setNewPassword] = useState("Emp@123")
   const [newRole, setNewRole] = useState("")
   const [newDept, setNewDept] = useState("Engineering")
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -46,6 +47,7 @@ export default function EmployeesPage() {
       id: `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
       name: newName,
       email: newEmail,
+      password: newPassword || "Emp@123",
       role: newRole || "Software Engineer",
       dept: newDept,
       status: "Active",
@@ -55,6 +57,7 @@ export default function EmployeesPage() {
     setEmployeesList(updated)
     setNewName("")
     setNewEmail("")
+    setNewPassword("Emp@123")
     setNewRole("")
     setIsAddOpen(false)
   }
@@ -100,8 +103,8 @@ export default function EmployeesPage() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle className="text-foreground">Add New Employee</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">Create a new employee profile in the HRMS system.</DialogDescription>
+                  <DialogTitle className="text-foreground">Add New Employee Account</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">Create a new employee profile with system login credentials.</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleAddEmployee} className="space-y-4 pt-2">
                   <div className="space-y-1">
@@ -109,8 +112,13 @@ export default function EmployeesPage() {
                     <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Sarah Connor" required className="text-foreground" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-foreground">Work Email</Label>
+                    <Label className="text-foreground">Work Email (Login Username)</Label>
                     <Input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="sarah.c@kenzo.com" required className="text-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-foreground">Initial Login Password</Label>
+                    <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Emp@123" required className="text-foreground" />
+                    <p className="text-[11px] text-muted-foreground">The employee will use this email & password to sign in.</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-foreground">Designation / Role</Label>
@@ -120,7 +128,7 @@ export default function EmployeesPage() {
                     <Label className="text-foreground">Department</Label>
                     <Input value={newDept} onChange={e => setNewDept(e.target.value)} placeholder="Engineering" className="text-foreground" />
                   </div>
-                  <Button type="submit" className="w-full">Create Employee</Button>
+                  <Button type="submit" className="w-full">Create Employee Account</Button>
                 </form>
               </DialogContent>
             </Dialog>

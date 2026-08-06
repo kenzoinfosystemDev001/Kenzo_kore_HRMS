@@ -4,6 +4,7 @@ export interface EmployeeRecord {
   id: string
   name: string
   email: string
+  password?: string
   role: string
   dept: string
   status: string

@@ -132,17 +132,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 600))
 
-      const entry = USER_DB[email.toLowerCase().trim()]
-      if (!entry) {
-        return { success: false, error: "No account found with this email address." }
-      }
-      if (entry.password !== password) {
-        return { success: false, error: "Incorrect password. Please try again." }
+      const normalizedEmail = email.toLowerCase().trim()
+
+      // 1. Check static USER_DB (Admin / Sujal Kumar)
+      const entry = USER_DB[normalizedEmail]
+      if (entry) {
+        if (entry.password !== password) {
+          return { success: false, error: "Incorrect password. Please try again." }
+        }
+        setUser(entry.user)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entry.user))
+        return { success: true }
       }
 
-      setUser(entry.user)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(entry.user))
-      return { success: true }
+      // 2. Check dynamic employeeStore for newly created employees
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem("kenzo_hrms_employees_store")
+          if (stored) {
+            const list = JSON.parse(stored) as Array<{
+              id: string
+              name: string
+              email: string
+              password?: string
+              role: string
+              dept: string
+            }>
+            const empMatch = list.find(e => e.email.toLowerCase().trim() === normalizedEmail)
+            if (empMatch) {
+              const validPass = empMatch.password || "Emp@123"
+              if (validPass !== password) {
+                return { success: false, error: "Incorrect password. Please try again." }
+              }
+              const newUser: AuthUser = {
+                id: empMatch.id,
+                name: empMatch.name,
+                email: empMatch.email,
+                role: "employee",
+                initials: empMatch.name.split(" ").map(n => n[0]).join("").toUpperCase(),
+                department: empMatch.dept,
+                designation: empMatch.role,
+              }
+              setUser(newUser)
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
+              return { success: true }
+            }
+          }
+        } catch {
+          // Fallback
+        }
+      }
+
+      return { success: false, error: "No account found with this email address." }
     },
     []
   )
