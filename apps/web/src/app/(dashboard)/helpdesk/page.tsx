@@ -9,12 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 
-const tickets = [
-  { id: "TKT-3041", subject: "Request for Monitor Stand & Ergonomic Chair", category: "IT Hardware", raisedBy: "Jenny Wilson", assignedTo: "IT Support", priority: "Medium", status: "In Progress", sla: "4 Hrs Left" },
-  { id: "TKT-3042", subject: "Tax Exemption Form Section 80C Clarification", category: "Finance / Payroll", raisedBy: "Devon Lane", assignedTo: "Kristin Watson", priority: "High", status: "Open", sla: "2 Hrs Left" },
-  { id: "TKT-3043", subject: "VPN Access Token Reset for Remote Access", category: "IT Security", raisedBy: "Dianne Russell", assignedTo: "Wade Warren", priority: "Urgent", status: "Resolved", sla: "Met SLA" },
-  { id: "TKT-3044", subject: "Health Insurance Domiciliary Claim Submission", category: "HR Benefits", raisedBy: "Theresa Webb", assignedTo: "Jane Cooper", priority: "Low", status: "Open", sla: "12 Hrs Left" },
-]
+const tickets: any[] = []
 
 export default function HelpdeskPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -51,7 +46,7 @@ export default function HelpdeskPage() {
             <HeadphonesIcon className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">14 Active</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground mt-1">HR, IT & Payroll tickets</p>
           </CardContent>
         </Card>
@@ -61,7 +56,7 @@ export default function HelpdeskPage() {
             <Clock className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">98.2%</div>
+            <div className="text-2xl font-bold">N/A</div>
             <p className="text-xs text-muted-foreground mt-1">Resolved within SLA target</p>
           </CardContent>
         </Card>
@@ -71,7 +66,7 @@ export default function HelpdeskPage() {
             <CheckCircle2 className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3.2 Hours</div>
+            <div className="text-2xl font-bold">N/A</div>
             <p className="text-xs text-muted-foreground mt-1">First response under 15m</p>
           </CardContent>
         </Card>
@@ -81,7 +76,7 @@ export default function HelpdeskPage() {
             <MessageSquare className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4.9 / 5.0</div>
+            <div className="text-2xl font-bold">N/A</div>
             <p className="text-xs text-muted-foreground mt-1">Based on 210 responses</p>
           </CardContent>
         </Card>
@@ -116,21 +111,32 @@ export default function HelpdeskPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tickets.map((tkt) => (
-                <TableRow key={tkt.id}>
-                  <TableCell className="font-mono text-xs font-semibold">{tkt.id}</TableCell>
-                  <TableCell className="font-medium max-w-xs truncate">{tkt.subject}</TableCell>
-                  <TableCell>{tkt.category}</TableCell>
-                  <TableCell>{tkt.raisedBy}</TableCell>
-                  <TableCell>{getPriorityBadge(tkt.priority)}</TableCell>
-                  <TableCell className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{tkt.sla}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
+              {tickets.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center">
+                      <HeadphonesIcon className="h-8 w-8 mb-2 opacity-50" />
+                      <p>No support tickets</p>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                tickets.map((tkt) => (
+                  <TableRow key={tkt.id}>
+                    <TableCell className="font-mono text-xs font-semibold">{tkt.id}</TableCell>
+                    <TableCell className="font-medium max-w-xs truncate">{tkt.subject}</TableCell>
+                    <TableCell>{tkt.category}</TableCell>
+                    <TableCell>{tkt.raisedBy}</TableCell>
+                    <TableCell>{getPriorityBadge(tkt.priority)}</TableCell>
+                    <TableCell className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{tkt.sla}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon">
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

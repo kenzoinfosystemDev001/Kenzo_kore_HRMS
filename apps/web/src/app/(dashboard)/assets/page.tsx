@@ -10,11 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 
 const assets = [
-  { code: "AST-1089", name: 'MacBook Pro 16" M3 Max', category: "Laptop / Hardware", assignedTo: "Sujal Kumar", date: "May 10, 2026", status: "Assigned" },
-  { code: "AST-1090", name: "Dell UltraSharp 32 4K", category: "Monitor", assignedTo: "Ralph Edwards", date: "May 15, 2026", status: "Assigned" },
-  { code: "AST-1091", name: 'MacBook Air 15" M2', category: "Laptop / Hardware", assignedTo: "Esther Howard", date: "May 18, 2026", status: "Assigned" },
-  { code: "AST-1092", name: "iPhone 15 Pro Test Device", category: "Mobile Device", assignedTo: "Unassigned", date: "-", status: "Available" },
-  { code: "AST-1093", name: "Lenovo ThinkPad P1", category: "Laptop / Hardware", assignedTo: "Cody Fisher", date: "Apr 02, 2026", status: "In Repair" },
+  { code: "AST-1001", name: 'MacBook Pro 16" M3 Max', category: "Laptop / Hardware", assignedTo: "Sujal Kumar", date: "Jan 15, 2024", status: "Assigned" }
 ]
 
 export default function AssetsPage() {
@@ -52,7 +48,7 @@ export default function AssetsPage() {
             <Laptop className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">148 Devices</div>
+            <div className="text-2xl font-bold">1</div>
             <p className="text-xs text-muted-foreground mt-1">Laptops, monitors, mobile</p>
           </CardContent>
         </Card>
@@ -62,7 +58,7 @@ export default function AssetsPage() {
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">132</div>
+            <div className="text-2xl font-bold">1</div>
             <p className="text-xs text-muted-foreground mt-1">Active employee allocations</p>
           </CardContent>
         </Card>
@@ -72,7 +68,7 @@ export default function AssetsPage() {
             <Shield className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12 Ready</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground mt-1">For new onboarding</p>
           </CardContent>
         </Card>
@@ -82,7 +78,7 @@ export default function AssetsPage() {
             <AlertTriangle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4 Devices</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground mt-1">Under warranty repair</p>
           </CardContent>
         </Card>

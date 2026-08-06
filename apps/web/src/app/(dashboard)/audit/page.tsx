@@ -8,12 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 
-const auditLogs = [
-  { id: "AUD-9012", user: "admin@kenzo.com", action: "USER_LOGIN_SUCCESS", entity: "User Session", ip: "192.168.1.111", timestamp: "Aug 05, 2026 15:48:36" },
-  { id: "AUD-9013", user: "admin@kenzo.com", action: "PAYROLL_RUN_APPROVED", entity: "PayrollRun (Aug 2026)", ip: "192.168.1.111", timestamp: "Aug 05, 2026 15:30:12" },
-  { id: "AUD-9014", user: "hr.manager@kenzo.com", action: "EMPLOYEE_RECORD_UPDATE", entity: "Employee (EMP-1004)", ip: "10.0.4.52", timestamp: "Aug 05, 2026 14:15:00" },
-  { id: "AUD-9015", user: "admin@kenzo.com", action: "ROLE_PERMISSIONS_UPDATED", entity: "Role (HR Manager)", ip: "192.168.1.111", timestamp: "Aug 05, 2026 12:00:45" },
-]
+const auditLogs: any[] = []
 
 export default function AuditPage() {
   return (
@@ -26,6 +21,27 @@ export default function AuditPage() {
         <Button className="bg-primary">
           <Download className="mr-2 h-4 w-4" /> Export Audit Log
         </Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 mb-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+            <ShieldCheck className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Security Alerts</CardTitle>
+            <ShieldCheck className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0</div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -46,20 +62,28 @@ export default function AuditPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {auditLogs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell className="font-mono text-xs font-semibold">{log.id}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="font-mono text-[11px] bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                      {log.action}
-                    </Badge>
+              {auditLogs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    No audit log entries recorded yet
                   </TableCell>
-                  <TableCell className="font-medium">{log.user}</TableCell>
-                  <TableCell>{log.entity}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{log.ip}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{log.timestamp}</TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                auditLogs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="font-mono text-xs font-semibold">{log.id}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-[11px] bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                        {log.action}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{log.user}</TableCell>
+                    <TableCell>{log.entity}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{log.ip}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{log.timestamp}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

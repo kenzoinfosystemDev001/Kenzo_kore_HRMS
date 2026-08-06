@@ -14,11 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 
 const roles = [
-  { id: "r-1", name: "Super Admin", users: 2, description: "Full access to all system features." },
-  { id: "r-2", name: "HR Manager", users: 5, description: "Manage employees, leaves, and attendance." },
-  { id: "r-3", name: "Finance Admin", users: 3, description: "Access to payroll, expenses, and reports." },
-  { id: "r-4", name: "Department Head", users: 12, description: "Manage team attendance and approvals." },
-  { id: "r-5", name: "Employee", users: 245, description: "Default role with basic self-service access." },
+  { id: "r-1", name: "Super Admin", users: 1, description: "Full access to all system features." },
+  { id: "r-5", name: "Employee", users: 1, description: "Default role with basic self-service access." },
 ]
 
 export default function SettingsPage() {
@@ -136,11 +133,11 @@ export default function SettingsPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="companyName">Company Name</Label>
-                    <Input id="companyName" defaultValue="Kenzo Technologies Inc." />
+                    <Input id="companyName" defaultValue="Kenzo Infosystems Pvt. Ltd." />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="legalName">Legal Name</Label>
-                    <Input id="legalName" defaultValue="Kenzo Technologies Inc." />
+                    <Input id="legalName" defaultValue="Kenzo Infosystems Pvt. Ltd." />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="industry">Industry</Label>
@@ -152,16 +149,16 @@ export default function SettingsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="contactEmail">Contact Email</Label>
-                    <Input id="contactEmail" type="email" defaultValue="contact@kenzotech.com" />
+                    <Input id="contactEmail" type="email" defaultValue="contact@kenzoinfosystems.com" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="contactPhone">Contact Phone</Label>
-                    <Input id="contactPhone" type="tel" defaultValue="+1 (555) 123-4567" />
+                    <Input id="contactPhone" type="tel" defaultValue="+91 (120) 456-7890" />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address">Registered Address</Label>
-                  <Input id="address" defaultValue="123 Innovation Drive, Tech Park, San Francisco, CA 94105" />
+                  <Input id="address" defaultValue="Tech Hub, Sector 62, Noida, UP 201301, India" />
                 </div>
               </CardContent>
               <CardFooter>

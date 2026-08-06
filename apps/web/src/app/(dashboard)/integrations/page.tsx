@@ -8,12 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from "@/components/ui/badge"
 
 const integrations = [
-  { name: "Kenzo OneERP Integration", category: "ERP Core", desc: "Master sync for employee headcount, organizational hierarchy, and cost centers.", status: "Connected" },
-  { name: "Kore Expense Sync", category: "Expense & Finance", desc: "Automated reimbursement payouts and credit card receipt reconciliation.", status: "Connected" },
-  { name: "DAP Analytics Bridge", category: "Data Platform", desc: "Real-time workforce metric event publishing and predictive attrition streaming.", status: "Available" },
-  { name: "Salesforce CRM Sync", category: "CRM", desc: "Map sales quotas, incentive bonuses, and commission payouts into monthly payroll.", status: "Connected" },
-  { name: "Slack & Microsoft Teams Bot", category: "Communication", desc: "Instant leave approval notifications, daily clock-in alerts, and AI HR copilot.", status: "Connected" },
-  { name: "QuickBooks & Xero Accounting", category: "Finance", desc: "Export monthly payroll journal entries and statutory tax filings directly.", status: "Available" },
+  { name: "Slack", category: "Communication", desc: "Instant leave approval notifications and daily clock-in alerts.", status: "Not Connected" },
+  { name: "Google Workspace", category: "Productivity", desc: "Sync calendar and emails.", status: "Not Connected" },
+  { name: "Microsoft Teams", category: "Communication", desc: "Instant leave approval notifications and AI HR copilot.", status: "Not Connected" },
+  { name: "Jira", category: "Project Management", desc: "Sync tasks and issues.", status: "Not Connected" },
 ]
 
 export default function IntegrationsPage() {
@@ -44,8 +42,8 @@ export default function IntegrationsPage() {
             </CardHeader>
             <CardFooter className="border-t pt-4">
               <Button variant="ghost" size="sm" className="w-full justify-between">
-                <span>Configure Pipeline</span>
-                <ArrowUpRight className="h-4 w-4" />
+                <span>Connect</span>
+                <Zap className="h-4 w-4" />
               </Button>
             </CardFooter>
           </Card>

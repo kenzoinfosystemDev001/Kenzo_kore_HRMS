@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useForm } from "react-hook-form"
@@ -29,44 +28,40 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { useAuth } from '@/lib/auth'
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  rememberMe: z.boolean(),
+  rememberMe: z.boolean().optional(),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function HomePage() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = React.useState(false)
+  const { login, isLoading: authLoading, user } = useAuth()
+  const [loginError, setLoginError] = React.useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "admin@kenzo.com",
-      password: "Admin@123",
+      email: "",
+      password: "",
       rememberMe: true,
     },
   })
 
   async function onSubmit(data: LoginFormValues) {
-    setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
-      router.push("/dashboard")
-    }, 800)
-  }
-
-  const fillQuickLogin = (email: string, pass: string) => {
-    setValue("email", email)
-    setValue("password", pass)
+    setLoginError(null)
+    const res = await login(data.email, data.password)
+    if (!res.success && res.error) {
+      setLoginError(res.error)
+    }
   }
 
   return (
@@ -86,18 +81,6 @@ export default function HomePage() {
           <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[10px] tracking-wider uppercase font-semibold">
             Enterprise v2.0
           </Badge>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-sm font-medium text-slate-300 hover:text-white transition-colors hidden sm:block">
-            Dashboard Preview
-          </Link>
-          <Button 
-            onClick={() => router.push("/dashboard")} 
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md shadow-blue-600/20 font-medium"
-          >
-            Launch System <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
         </div>
       </header>
 
@@ -120,74 +103,34 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Metric Stats Banner */}
-          <div className="grid grid-cols-3 gap-4 border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl p-4 rounded-2xl">
-            <div className="space-y-1 text-center sm:text-left border-r border-slate-800 pr-2">
-              <div className="text-2xl sm:text-3xl font-extrabold text-white">1,240+</div>
-              <div className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1">
-                <Users className="h-3 w-3 text-blue-400" /> Active Employees
-              </div>
-            </div>
-            <div className="space-y-1 text-center sm:text-left border-r border-slate-800 pr-2">
-              <div className="text-2xl sm:text-3xl font-extrabold text-emerald-400">99.9%</div>
-              <div className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1">
-                <CheckCircle2 className="h-3 w-3 text-emerald-400" /> Payroll Accuracy
-              </div>
-            </div>
-            <div className="space-y-1 text-center sm:text-left">
-              <div className="text-2xl sm:text-3xl font-extrabold text-indigo-400">50+</div>
-              <div className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1">
-                <Globe className="h-3 w-3 text-indigo-400" /> ERP Integrations
-              </div>
-            </div>
-          </div>
-
           {/* Feature Bullets */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
             <div className="flex items-center gap-2.5 bg-slate-900/40 border border-slate-800/50 px-3 py-2 rounded-xl">
               <ShieldCheck className="h-4 w-4 text-blue-400 shrink-0" />
-              <span>Multi-Tenant & Role-Based RBAC</span>
+              <span>Multi-Tenant RBAC</span>
             </div>
             <div className="flex items-center gap-2.5 bg-slate-900/40 border border-slate-800/50 px-3 py-2 rounded-xl">
               <Clock className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>Real-Time Biometric & GPS Clock In</span>
+              <span>Real-Time Biometric Clock In</span>
             </div>
             <div className="flex items-center gap-2.5 bg-slate-900/40 border border-slate-800/50 px-3 py-2 rounded-xl">
               <Award className="h-4 w-4 text-indigo-400 shrink-0" />
-              <span>1-Click Payslip & Tax Calculations</span>
+              <span>1-Click Payslip Generator</span>
             </div>
             <div className="flex items-center gap-2.5 bg-slate-900/40 border border-slate-800/50 px-3 py-2 rounded-xl">
               <TrendingUp className="h-4 w-4 text-cyan-400 shrink-0" />
               <span>360° Appraisals & OKR Tracking</span>
             </div>
           </div>
-
-          {/* CHRO Testimonial */}
-          <div className="border border-slate-800/80 bg-slate-900/40 p-5 rounded-2xl flex items-start gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 font-bold shrink-0 ring-1 ring-blue-500/30">
-              SD
-            </div>
-            <div className="space-y-1 text-xs">
-              <div className="flex items-center gap-1 text-amber-400 mb-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-3 w-3 fill-amber-400" />
-                ))}
-              </div>
-              <p className="text-slate-200 italic font-medium text-sm">
-                &quot;Kenzo HRMS transformed our 1,200+ global employee operations. Attendance sync and payslip downloads take seconds!&quot;
-              </p>
-              <p className="text-slate-400 font-semibold">Sofia Davis — Chief HR Officer, GlobalTech</p>
-            </div>
-          </div>
         </div>
 
         {/* Right Column - Sleek Authentication & Portal Access */}
-        <div className="lg:col-span-5 w-full">
+        <div className="lg:col-span-5 w-full flex justify-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
-            className="rounded-3xl border border-slate-800 bg-slate-900/90 p-8 shadow-2xl backdrop-blur-2xl relative overflow-hidden"
+            className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/90 p-8 shadow-2xl backdrop-blur-2xl relative overflow-hidden"
           >
             {/* Top Card Gradient Line */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400" />
@@ -195,34 +138,6 @@ export default function HomePage() {
             <div className="space-y-2 text-center mb-6">
               <h2 className="text-2xl font-bold text-white tracking-tight">System Portal Login</h2>
               <p className="text-xs text-slate-400">Sign in to access your HRMS dashboard and employee self-service.</p>
-            </div>
-
-            {/* Quick Demo Credentials Bar */}
-            <div className="mb-6 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs space-y-2">
-              <div className="font-semibold text-blue-300 flex items-center justify-between">
-                <span>⚡ Instant Quick Demo Login:</span>
-                <Badge className="bg-blue-500 text-white text-[9px]">Click to fill</Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => fillQuickLogin("admin@kenzo.com", "Admin@123")}
-                  className="text-[11px] h-8 bg-slate-950/60 border-slate-800 text-slate-200 hover:border-blue-500 hover:text-white"
-                >
-                  Super Admin
-                </Button>
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => fillQuickLogin("employee@kenzo.com", "Emp@123")}
-                  className="text-[11px] h-8 bg-slate-950/60 border-slate-800 text-slate-200 hover:border-blue-500 hover:text-white"
-                >
-                  Employee Self-Service
-                </Button>
-              </div>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -233,8 +148,8 @@ export default function HomePage() {
                   placeholder="name@company.com"
                   className="bg-slate-950/80 border-slate-800 text-white focus:border-blue-500 h-10"
                   {...register("email")}
-                  error={errors.email?.message}
                 />
+                {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
               </div>
 
               <div className="space-y-1.5">
@@ -247,8 +162,8 @@ export default function HomePage() {
                   placeholder="••••••••"
                   className="bg-slate-950/80 border-slate-800 text-white focus:border-blue-500 h-10"
                   {...register("password")}
-                  error={errors.password?.message}
                 />
+                {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
               </div>
 
               <div className="flex items-center space-x-2 py-1">
@@ -258,26 +173,50 @@ export default function HomePage() {
                 </label>
               </div>
 
+              {loginError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md">
+                  <p className="text-xs text-red-500 text-center">{loginError}</p>
+                </div>
+              )}
+
               <Button 
                 type="submit" 
-                disabled={isLoading}
+                disabled={authLoading}
                 className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold h-11 shadow-lg shadow-blue-600/30 text-sm"
               >
-                {isLoading ? "Authenticating..." : "Sign In to HRMS"}
-                {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+                {authLoading ? "Authenticating..." : "Sign In to HRMS"}
+                {!authLoading && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
             </form>
 
-            {/* Direct Dashboard Access Option */}
-            <div className="mt-5 pt-4 border-t border-slate-800 text-center">
-              <Button 
-                variant="ghost" 
-                onClick={() => router.push("/dashboard")}
-                className="text-xs text-slate-400 hover:text-white w-full"
-              >
-                Explore Live Demo Dashboard Directly <ChevronRight className="ml-1 h-3.5 w-3.5" />
-              </Button>
+            <div className="mt-8 space-y-3">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-slate-800" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-slate-900/90 px-2 text-slate-500">Demo Credentials</span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex flex-col bg-slate-950/60 border border-slate-800 rounded-lg p-2.5 text-xs">
+                  <span className="text-slate-300 font-semibold mb-1">Ankit Sethi - CEO (Admin)</span>
+                  <div className="flex justify-between text-slate-400">
+                    <span>admin@kenzo.com</span>
+                    <span>Admin@123</span>
+                  </div>
+                </div>
+                <div className="flex flex-col bg-slate-950/60 border border-slate-800 rounded-lg p-2.5 text-xs">
+                  <span className="text-slate-300 font-semibold mb-1">Sujal Kumar - Architect (Employee)</span>
+                  <div className="flex justify-between text-slate-400">
+                    <span>employee@kenzo.com</span>
+                    <span>Emp@123</span>
+                  </div>
+                </div>
+              </div>
             </div>
+
           </motion.div>
         </div>
       </main>

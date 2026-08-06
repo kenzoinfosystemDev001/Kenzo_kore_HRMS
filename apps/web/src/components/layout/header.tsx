@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Bell, MessageSquare, Search, Plus, Sparkles, ShieldCheck } from "lucide-react"
+import { Bell, MessageSquare, Search, Plus, ShieldCheck } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -15,8 +15,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAuth } from "@/lib/auth"
 
 export function Header() {
+  const { user, isAdmin, logout } = useAuth()
+
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card/80 backdrop-blur-xl px-6 z-20">
       <div className="flex w-full max-w-md items-center gap-3">
@@ -56,26 +59,30 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-primary/30 hover:ring-primary">
               <Avatar className="h-9 w-9">
-                <AvatarImage src="/avatars/01.png" alt="@admin" />
-                <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xs">SK</AvatarFallback>
+                <AvatarImage src="/avatars/01.png" alt={`@${user?.name || 'user'}`} />
+                <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xs">{user?.initials || 'U'}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56 bg-card border-border text-card-foreground" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-bold text-foreground">Sujal Kumar</p>
+                <p className="text-sm font-bold text-foreground">{user?.name}</p>
                 <p className="text-xs text-muted-foreground font-mono">
-                  admin@kenzo.com
+                  {user?.email}
                 </p>
-                <Badge className="w-fit bg-primary/10 text-primary border-primary/20 text-[10px] mt-1">Super Admin</Badge>
+                <Badge className="w-fit bg-primary/10 text-primary border-primary/20 text-[10px] mt-1 capitalize">
+                  {user?.role === 'admin' ? 'Admin' : 'Employee'}
+                </Badge>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="cursor-pointer">Profile Settings</DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">Company Configuration</DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem className="cursor-pointer">Company Configuration</DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive cursor-pointer">
+            <DropdownMenuItem className="text-destructive cursor-pointer" onClick={logout}>
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -33,6 +33,7 @@ import { useTheme } from "next-themes"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { useAuth, ADMIN_ONLY_ROUTES, EMPLOYEE_ALLOWED_ROUTES } from "@/lib/auth"
 
 const navGroups = [
   {
@@ -84,6 +85,17 @@ export function Sidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = React.useState(false)
   const { theme, setTheme } = useTheme()
+  const { user, isAdmin } = useAuth()
+
+  const filteredGroups = navGroups.map(group => {
+    return {
+      ...group,
+      items: group.items.filter(item => {
+        if (isAdmin) return true;
+        return EMPLOYEE_ALLOWED_ROUTES.includes(item.href);
+      })
+    }
+  }).filter(group => group.items.length > 0)
 
   return (
     <motion.aside
@@ -123,7 +135,7 @@ export function Sidebar() {
 
       {/* Navigation Group Stream */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 custom-scrollbar">
-        {navGroups.map((group, i) => (
+        {filteredGroups.map((group, i) => (
           <div key={i} className="mb-5 px-3">
             {!collapsed && (
               <h4 className="mb-2 px-3 text-[10px] font-extrabold tracking-[1.5px] text-slate-400 uppercase flex items-center justify-between">
@@ -157,8 +169,21 @@ export function Sidebar() {
         ))}
       </div>
 
-      {/* Footer Toggle */}
-      <div className="border-t border-slate-800/80 p-3 bg-slate-950/60">
+      {/* Footer Profile & Toggle */}
+      <div className="border-t border-slate-800/80 p-3 bg-slate-950/60 flex flex-col gap-2">
+        {user && (
+          <div className={cn("flex items-center gap-3 px-2 py-2 rounded-xl bg-slate-900/50 border border-slate-800/50", collapsed ? "justify-center" : "")}>
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600/20 text-blue-400 font-bold text-xs uppercase">
+              {user.name.charAt(0)}
+            </div>
+            {!collapsed && (
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-xs font-semibold text-slate-200 truncate">{user.name}</span>
+                <span className="text-[10px] text-slate-500 truncate capitalize">{user.role.toLowerCase()}</span>
+              </div>
+            )}
+          </div>
+        )}
         <Button
           variant="ghost"
           className={cn(

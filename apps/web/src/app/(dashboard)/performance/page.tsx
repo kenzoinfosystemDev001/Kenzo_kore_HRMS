@@ -10,12 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-const okrs = [
-  { title: "Achieve 99.9% Uptime for Core Monolith Services", category: "Engineering", progress: 85, weight: "30%", owner: "Wade Warren" },
-  { title: "Redesign Employee Self-Service Mobile Dashboard", category: "Design", progress: 92, weight: "25%", owner: "Ralph Edwards" },
-  { title: "Reduce Average Hiring Cycle from 45 to 30 Days", category: "Recruitment", progress: 70, weight: "20%", owner: "Jane Cooper" },
-  { title: "Automate Monthly Payroll Tax Deductions Process", category: "Finance", progress: 100, weight: "25%", owner: "Kristin Watson" },
-]
+const okrs: any[] = []
 
 export default function PerformancePage() {
   return (
@@ -37,7 +32,7 @@ export default function PerformancePage() {
             <Target className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Q3 Mid-Year Review</div>
+            <div className="text-2xl font-bold">No Active Cycle</div>
             <p className="text-xs text-muted-foreground mt-1">Ends Sep 30, 2026</p>
           </CardContent>
         </Card>
@@ -47,7 +42,7 @@ export default function PerformancePage() {
             <TrendingUp className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">86.7%</div>
+            <div className="text-2xl font-bold">0%</div>
             <p className="text-xs text-muted-foreground mt-1">Company-wide average</p>
           </CardContent>
         </Card>
@@ -57,7 +52,7 @@ export default function PerformancePage() {
             <CheckCircle2 className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">42 / 48</div>
+            <div className="text-2xl font-bold">0 / 0</div>
             <p className="text-xs text-muted-foreground mt-1">87% submitted</p>
           </CardContent>
         </Card>
@@ -67,7 +62,7 @@ export default function PerformancePage() {
             <Star className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">14 High Exceeds</div>
+            <div className="text-2xl font-bold">N/A</div>
             <p className="text-xs text-muted-foreground mt-1">Eligible for promotion</p>
           </CardContent>
         </Card>
@@ -98,25 +93,36 @@ export default function PerformancePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {okrs.map((okr, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium">{okr.title}</TableCell>
-                      <TableCell>{okr.category}</TableCell>
-                      <TableCell>{okr.owner}</TableCell>
-                      <TableCell>{okr.weight}</TableCell>
-                      <TableCell className="w-44">
-                        <div className="flex items-center gap-2">
-                          <Progress value={okr.progress} className="h-2 flex-1" />
-                          <span className="text-xs font-semibold">{okr.progress}%</span>
+                  {okrs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center">
+                          <Target className="h-8 w-8 mb-2 opacity-50" />
+                          <p>No OKRs configured yet</p>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge className={okr.progress === 100 ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"}>
-                          {okr.progress === 100 ? "Achieved" : "On Track"}
-                        </Badge>
-                      </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    okrs.map((okr, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="font-medium">{okr.title}</TableCell>
+                        <TableCell>{okr.category}</TableCell>
+                        <TableCell>{okr.owner}</TableCell>
+                        <TableCell>{okr.weight}</TableCell>
+                        <TableCell className="w-44">
+                          <div className="flex items-center gap-2">
+                            <Progress value={okr.progress} className="h-2 flex-1" />
+                            <span className="text-xs font-semibold">{okr.progress}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={okr.progress === 100 ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"}>
+                            {okr.progress === 100 ? "Achieved" : "On Track"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

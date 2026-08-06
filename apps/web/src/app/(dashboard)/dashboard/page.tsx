@@ -39,6 +39,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAuth } from "@/lib/auth"
 
 import {
   statCards,
@@ -51,6 +52,7 @@ const COLORS = ["#3B82F6", "#6366F1", "#EC4899", "#8B5CF6", "#10B981", "#F59E0B"
 
 export default function DashboardPage() {
   const [leaveQueue, setLeaveQueue] = useState(initialLeaveRequests)
+  const { user, isAdmin } = useAuth()
 
   const handleApprove = (id: number) => {
     setLeaveQueue(leaveQueue.filter(r => r.id !== id))
@@ -69,9 +71,9 @@ export default function DashboardPage() {
             <Sparkles className="h-3.5 w-3.5 text-blue-500 animate-pulse" /> Kenzo HRMS Executive Control Center
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight text-foreground">
-            Good Morning, <span className="hero-gradient-text">Sujal</span>
+            Good Morning, <span className="hero-gradient-text">{user?.name?.split(' ')[0] || "User"}</span>
           </h2>
-          <p className="text-muted-foreground text-sm mt-1">Here is real-time intelligence for Kenzo Technologies global workforce.</p>
+          <p className="text-muted-foreground text-sm mt-1">Here is real-time intelligence for Kenzo Technologies workforce.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -158,30 +160,34 @@ export default function DashboardPage() {
                 <div key={req.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9 border border-primary/20">
-                      <AvatarFallback className="bg-primary/20 text-primary font-bold text-xs">{req.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      <AvatarFallback className="bg-primary/20 text-primary font-bold text-xs">{req.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                     </Avatar>
                     <div>
                       <h4 className="text-xs font-bold text-foreground">{req.name}</h4>
                       <p className="text-[11px] text-muted-foreground">{req.type} • {req.duration}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="default" className="h-7 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white px-2.5" onClick={() => handleApprove(req.id)}>
-                      Approve
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-7 text-[11px] text-rose-600 border-rose-200 dark:border-rose-800 hover:bg-rose-50 px-2" onClick={() => handleReject(req.id)}>
-                      Reject
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="default" className="h-7 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-primary-foreground px-2.5" onClick={() => handleApprove(req.id)}>
+                        Approve
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-[11px] text-rose-600 border-rose-200 dark:border-rose-800 hover:bg-rose-50 px-2" onClick={() => handleReject(req.id)}>
+                        Reject
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))
             )}
           </CardContent>
-          <CardFooter className="border-t pt-3">
-            <Button size="sm" className="w-full text-xs" variant="outline" onClick={() => setLeaveQueue([])}>
-              Approve All Pending Requests
-            </Button>
-          </CardFooter>
+          {isAdmin && (
+            <CardFooter className="border-t pt-3">
+              <Button size="sm" className="w-full text-xs text-foreground" variant="outline" onClick={() => setLeaveQueue([])}>
+                Approve All Pending Requests
+              </Button>
+            </CardFooter>
+          )}
         </Card>
       </div>
 
@@ -191,7 +197,7 @@ export default function DashboardPage() {
         <Card className="col-span-12 md:col-span-6 lg:col-span-4 glass-card">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-foreground">Department Headcount</CardTitle>
-            <CardDescription className="text-muted-foreground text-xs">Distribution across 1,240 employees.</CardDescription>
+            <CardDescription className="text-muted-foreground text-xs">Distribution across 2 employees.</CardDescription>
           </CardHeader>
           <CardContent className="h-[240px] flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
@@ -221,28 +227,28 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2 font-bold text-xs">
                 <AlertTriangle className="h-4 w-4 text-rose-500" /> High Attrition Risk Alert
               </div>
-              <p className="text-xs text-rose-600 dark:text-rose-200/80">5 senior engineering employees identified with high attrition markers in Q3.</p>
+              <p className="text-xs text-rose-600 dark:text-rose-200/80">System health monitoring active.</p>
             </div>
 
             <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 space-y-1">
               <div className="flex items-center gap-2 font-bold text-xs">
                 <Clock className="h-4 w-4 text-amber-500" /> Overtime Anomaly Detected
               </div>
-              <p className="text-xs text-amber-600 dark:text-amber-200/80">12 design team members exceeded 40 hours overtime threshold this pay cycle.</p>
+              <p className="text-xs text-amber-600 dark:text-amber-200/80">No overtime anomalies detected.</p>
             </div>
 
             <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 space-y-1">
               <div className="flex items-center gap-2 font-bold text-xs">
                 <ShieldCheck className="h-4 w-4 text-blue-500" /> Probation Period Expirations
               </div>
-              <p className="text-xs text-blue-600 dark:text-blue-200/80">8 new hires probation period ending in next 14 days. Appraisal review ready.</p>
+              <p className="text-xs text-blue-600 dark:text-blue-200/80">All probation reviews completed.</p>
             </div>
 
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 space-y-1">
               <div className="flex items-center gap-2 font-bold text-xs">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Payroll Readiness 99.8%
               </div>
-              <p className="text-xs text-emerald-600 dark:text-emerald-200/80">All attendance and tax calculations synchronized for 1-click August disbursement.</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-200/80">2 employees synchronized for 1-click August disbursement.</p>
             </div>
           </CardContent>
         </Card>
@@ -250,3 +256,4 @@ export default function DashboardPage() {
     </div>
   )
 }
+

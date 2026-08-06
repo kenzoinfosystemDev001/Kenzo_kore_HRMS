@@ -9,13 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 
-const expenseClaims = [
-  { id: "EXP-8901", employee: "Jenny Wilson", category: "Travel & Mileage", amount: "₹14,500", date: "Aug 02, 2026", merchant: "Uber & Indigo", status: "Approved" },
-  { id: "EXP-8902", employee: "Devon Lane", category: "Client Entertainment", amount: "₹8,200", date: "Aug 03, 2026", merchant: "The Taj Hotel", status: "Pending" },
-  { id: "EXP-8903", employee: "Dianne Russell", category: "Software Subscription", amount: "₹4,999", date: "Aug 04, 2026", merchant: "JetBrains", status: "Approved" },
-  { id: "EXP-8904", employee: "Cody Fisher", category: "Office Supplies", amount: "₹3,450", date: "Aug 04, 2026", merchant: "Amazon Business", status: "Rejected" },
-  { id: "EXP-8905", employee: "Esther Howard", category: "Training & Certification", amount: "₹25,000", date: "Aug 05, 2026", merchant: "AWS Exam", status: "Pending" },
-]
+const expenseClaims: any[] = []
 
 export default function ExpensePage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -52,7 +46,7 @@ export default function ExpensePage() {
             <DollarSign className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹56,149</div>
+            <div className="text-2xl font-bold">₹0</div>
             <p className="text-xs text-muted-foreground mt-1">This month</p>
           </CardContent>
         </Card>
@@ -62,7 +56,7 @@ export default function ExpensePage() {
             <Clock className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground mt-1">Awaiting manager review</p>
           </CardContent>
         </Card>
@@ -72,7 +66,7 @@ export default function ExpensePage() {
             <CheckCircle2 className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹19,499</div>
+            <div className="text-2xl font-bold">₹0</div>
             <p className="text-xs text-muted-foreground mt-1">Ready for payout</p>
           </CardContent>
         </Card>
@@ -82,7 +76,7 @@ export default function ExpensePage() {
             <Receipt className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2.4 Days</div>
+            <div className="text-2xl font-bold">N/A</div>
             <p className="text-xs text-muted-foreground mt-1">Faster than industry avg</p>
           </CardContent>
         </Card>
@@ -118,22 +112,33 @@ export default function ExpensePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {expenseClaims.map((claim) => (
-                <TableRow key={claim.id}>
-                  <TableCell className="font-mono text-xs">{claim.id}</TableCell>
-                  <TableCell className="font-medium">{claim.employee}</TableCell>
-                  <TableCell>{claim.category}</TableCell>
-                  <TableCell>{claim.merchant}</TableCell>
-                  <TableCell>{claim.date}</TableCell>
-                  <TableCell className="font-semibold">{claim.amount}</TableCell>
-                  <TableCell>{getStatusBadge(claim.status)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <FileText className="h-4 w-4" />
-                    </Button>
+              {expenseClaims.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center">
+                      <Receipt className="h-8 w-8 mb-2 opacity-50" />
+                      <p>No expense claims submitted yet</p>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                expenseClaims.map((claim) => (
+                  <TableRow key={claim.id}>
+                    <TableCell className="font-mono text-xs">{claim.id}</TableCell>
+                    <TableCell className="font-medium">{claim.employee}</TableCell>
+                    <TableCell>{claim.category}</TableCell>
+                    <TableCell>{claim.merchant}</TableCell>
+                    <TableCell>{claim.date}</TableCell>
+                    <TableCell className="font-semibold">{claim.amount}</TableCell>
+                    <TableCell>{getStatusBadge(claim.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon">
+                        <FileText className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

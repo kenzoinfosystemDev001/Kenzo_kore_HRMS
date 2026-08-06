@@ -1,32 +1,27 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Starting full seed...');
+  console.log('Starting Kenzo Enterprise production seed...');
   await prisma.$connect();
 
-  // Clean up
-  console.log('Cleaning up existing data...');
-  // Note: normally you'd want to use truncate or delete in proper order if needed
-  
-  // 1. Create Tenant
+  // 1. Create Primary Tenant
   const tenant = await prisma.tenant.create({
     data: {
-      name: 'Kenzo Technologies Demo',
+      name: 'Kenzo Technologies',
       slug: `kenzo-tech-${Date.now()}`,
-      domain: 'kenzotech.local',
+      domain: 'kenzoinfosystems.com',
     },
   });
 
-  // 2. Create Organization
+  // 2. Create Primary Organization
   const org = await prisma.organization.create({
     data: {
       tenantId: tenant.id,
-      name: 'Kenzo Technologies Demo',
-      industry: 'Software Development',
+      name: 'Kenzo Technologies Inc.',
+      industry: 'Information Technology & Cloud Systems',
     },
   });
 
@@ -40,6 +35,8 @@ async function main() {
     { module: 'attendance', action: 'manage', resource: 'Attendance', code: 'attendance:manage' },
     { module: 'leave', action: 'manage', resource: 'Leave', code: 'leave:manage' },
     { module: 'leave', action: 'approve', resource: 'Leave', code: 'leave:approve' },
+    { module: 'payroll', action: 'manage', resource: 'Payroll', code: 'payroll:manage' },
+    { module: 'organization', action: 'manage', resource: 'Organization', code: 'organization:manage' },
   ];
 
   const permissions = [];
@@ -65,15 +62,30 @@ async function main() {
     },
   });
 
-  // 4. Create Admin User
-  const passwordHash = await bcrypt.hash('Admin@123', 12);
+  const empRole = await prisma.role.create({
+    data: {
+      tenantId: tenant.id,
+      name: 'Employee',
+      slug: 'employee',
+      isSystemRole: true,
+      rolePermissions: {
+        create: permissions.filter(p => ['employees:read', 'attendance:read'].includes(p.code)).map(p => ({ permissionId: p.id })),
+      },
+    },
+  });
+
+  // Passwords
+  const adminPasswordHash = await bcrypt.hash('Admin@123', 12);
+  const empPasswordHash = await bcrypt.hash('Emp@123', 12);
+
+  // 4. Create Admin: Ankit Sethi
   const adminUser = await prisma.user.create({
     data: {
       tenantId: tenant.id,
-      email: 'admin@kenzo.com',
-      passwordHash,
-      firstName: 'System',
-      lastName: 'Admin',
+      email: 'ankit.sethi@kenzo.com',
+      passwordHash: adminPasswordHash,
+      firstName: 'Ankit',
+      lastName: 'Sethi',
       emailVerified: true,
       userRoles: {
         create: [{ roleId: adminRole.id }],
@@ -81,38 +93,90 @@ async function main() {
     },
   });
 
-  // 5. Create Departments
-  const deptNames = ['Engineering', 'Design', 'Marketing', 'Sales', 'HR', 'Finance'];
-  const departments = [];
-  for (const name of deptNames) {
-    departments.push(await prisma.department.create({
-      data: { tenantId: tenant.id, organizationId: org.id, name, code: name.substring(0, 3).toUpperCase() },
-    }));
-  }
-
-  // 6. Create Designations
-  const desigNames = ['CTO', 'VP', 'Director', 'Senior', 'Mid', 'Junior'];
-  const designations = [];
-  for (const name of desigNames) {
-    designations.push(await prisma.designation.create({
-      data: { tenantId: tenant.id, name, code: name.substring(0, 3).toUpperCase() },
-    }));
-  }
-
-  // 7. Create Shift
-  const shift = await prisma.shift.create({
-    data: { tenantId: tenant.id, name: 'General Shift', startTime: '09:00', endTime: '18:00', gracePeriodMinutes: 15 },
+  // Alias Admin email
+  await prisma.user.create({
+    data: {
+      tenantId: tenant.id,
+      email: 'admin@kenzo.com',
+      passwordHash: adminPasswordHash,
+      firstName: 'Ankit',
+      lastName: 'Sethi',
+      emailVerified: true,
+      userRoles: {
+        create: [{ roleId: adminRole.id }],
+      },
+    },
   });
 
-  // 8. Create Leave Types
-  const leaveTypes = ['Casual Leave', 'Sick Leave', 'Earned Leave', 'Maternity Leave', 'Paternity Leave'];
-  for (const name of leaveTypes) {
-    await prisma.leaveType.create({
-      data: { tenantId: tenant.id, name, code: name.replace(' ', '').substring(0, 5).toUpperCase(), maxDaysPerYear: 12 },
-    });
-  }
+  // 5. Create Employee: Sujal Kumar
+  const employeeUser = await prisma.user.create({
+    data: {
+      tenantId: tenant.id,
+      email: 'sujal.k@kenzo.com',
+      passwordHash: empPasswordHash,
+      firstName: 'Sujal',
+      lastName: 'Kumar',
+      emailVerified: true,
+      userRoles: {
+        create: [{ roleId: empRole.id }],
+      },
+    },
+  });
 
-  console.log('Seed completed successfully!');
+  // Alias Employee email
+  await prisma.user.create({
+    data: {
+      tenantId: tenant.id,
+      email: 'employee@kenzo.com',
+      passwordHash: empPasswordHash,
+      firstName: 'Sujal',
+      lastName: 'Kumar',
+      emailVerified: true,
+      userRoles: {
+        create: [{ roleId: empRole.id }],
+      },
+    },
+  });
+
+  // 6. Create Departments
+  const deptEngineering = await prisma.department.create({
+    data: { tenantId: tenant.id, organizationId: org.id, name: 'Engineering & Technology', code: 'ENG' },
+  });
+
+  const deptExecutive = await prisma.department.create({
+    data: { tenantId: tenant.id, organizationId: org.id, name: 'Executive Operations', code: 'EXEC' },
+  });
+
+  // 7. Create Employee Profiles
+  await prisma.employee.create({
+    data: {
+      tenantId: tenant.id,
+      userId: adminUser.id,
+      employeeCode: 'EMP-1001',
+      firstName: 'Ankit',
+      lastName: 'Sethi',
+      email: 'ankit.sethi@kenzo.com',
+      departmentId: deptExecutive.id,
+      joiningDate: new Date('2024-01-01'),
+      status: 'ACTIVE',
+    },
+  });
+
+  await prisma.employee.create({
+    data: {
+      tenantId: tenant.id,
+      userId: employeeUser.id,
+      employeeCode: 'EMP-1002',
+      firstName: 'Sujal',
+      lastName: 'Kumar',
+      email: 'sujal.k@kenzo.com',
+      departmentId: deptEngineering.id,
+      joiningDate: new Date('2024-01-15'),
+      status: 'ACTIVE',
+    },
+  });
+
+  console.log('Kenzo Enterprise Seed completed successfully! Ankit Sethi (Admin) & Sujal Kumar (Employee) created.');
 }
 
 main()
