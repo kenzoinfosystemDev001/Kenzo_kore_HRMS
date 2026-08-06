@@ -148,32 +148,38 @@ async function main() {
   });
 
   // 7. Create Employee Profiles
-  await prisma.employee.create({
+  const emp1 = await prisma.employee.create({
     data: {
       tenantId: tenant.id,
-      userId: adminUser.id,
       employeeCode: 'EMP-1001',
       firstName: 'Ankit',
       lastName: 'Sethi',
-      email: 'ankit.sethi@kenzo.com',
+      workEmail: 'ankit.sethi@kenzo.com',
       departmentId: deptExecutive.id,
       joiningDate: new Date('2024-01-01'),
       status: 'ACTIVE',
     },
   });
+  await prisma.user.update({
+    where: { id: adminUser.id },
+    data: { employeeId: emp1.id },
+  });
 
-  await prisma.employee.create({
+  const emp2 = await prisma.employee.create({
     data: {
       tenantId: tenant.id,
-      userId: employeeUser.id,
       employeeCode: 'EMP-1002',
       firstName: 'Sujal',
       lastName: 'Kumar',
-      email: 'sujal.k@kenzo.com',
+      workEmail: 'sujal.k@kenzo.com',
       departmentId: deptEngineering.id,
       joiningDate: new Date('2024-01-15'),
       status: 'ACTIVE',
     },
+  });
+  await prisma.user.update({
+    where: { id: employeeUser.id },
+    data: { employeeId: emp2.id },
   });
 
   console.log('Kenzo Enterprise Seed completed successfully! Ankit Sethi (Admin) & Sujal Kumar (Employee) created.');
