@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client"
 
 import * as React from "react"
@@ -5,19 +6,13 @@ import { motion } from "framer-motion"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { 
-  ArrowRight, 
-  ShieldCheck, 
-  Sparkles, 
-  TrendingUp, 
-  Clock, 
-  Award
-} from "lucide-react"
+import { ArrowRight, Lock, ShieldCheck } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth"
 
 const loginSchema = z.object({
@@ -40,8 +35,8 @@ export default function LoginPage() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "admin@kenzo.com",
-      password: "Admin@123",
+      email: "",
+      password: "",
       rememberMe: true,
     },
   })
@@ -64,149 +59,98 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col justify-between overflow-x-hidden relative selection:bg-primary selection:text-primary-foreground">
       {/* Background Glow Elements */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-primary/15 rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-primary/15 rounded-full blur-[140px] pointer-events-none" />
 
       {/* Top Navbar */}
       <header className="relative z-30 border-b border-border bg-slate-950/70 backdrop-blur-xl px-6 lg:px-12 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3 font-extrabold text-2xl tracking-tight text-foreground">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-primary via-primary to-cyan-400 text-foreground font-bold text-xl shadow-lg ring-1 ring-border">
-            K
-          </div>
+          <img src="/logo.png" alt="Kenzo HRMS Logo" className="h-10 w-10 object-contain rounded-xl" />
           <span>Kenzo<span className="text-primary font-normal">HRMS</span></span>
+          <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] tracking-wider uppercase font-semibold">
+            Enterprise v2.0
+          </Badge>
         </div>
       </header>
 
-      {/* Main Grid Content */}
-      <main className="relative z-20 flex-1 grid grid-cols-1 lg:grid-cols-12 max-w-7xl w-full mx-auto p-6 lg:p-12 items-center gap-12">
-        
-        {/* Left Column - High-contrast Showcase */}
-        <div className="lg:col-span-7 space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary backdrop-blur-md">
-            <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
-            Enterprise Workforce Management Solution
+      {/* Centered Main Login Box */}
+      <main className="relative z-20 flex-1 flex items-center justify-center p-6 my-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-md rounded-3xl glass-card p-8 shadow-2xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary via-indigo-500 to-cyan-400" />
+
+          {/* Logo & Header */}
+          <div className="flex flex-col items-center text-center mb-6 space-y-2">
+            <img src="/logo.png" alt="Kenzo HRMS Logo" className="h-14 w-14 object-contain rounded-2xl mb-1 shadow-lg shadow-primary/20 ring-1 ring-white/10" />
+            <h2 className="text-2xl font-bold text-foreground tracking-tight">System Portal Login</h2>
+            <p className="text-xs text-muted-foreground">Sign in to access your HRMS workspace</p>
           </div>
 
-          <div className="space-y-4">
-            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground leading-[1.15]">
-              Welcome Back to <span className="hero-gradient-text">Kenzo HRMS</span>
-            </h1>
-            <p className="text-base text-muted-foreground max-w-xl leading-relaxed">
-              Streamline attendance, automated payroll, employee self-service, leave workflows, and performance reviews in one unified multi-tenant platform.
-            </p>
-          </div>
-
-          {/* Feature Badges Grid */}
-          <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2.5 bg-slate-900/60 border border-border p-3 rounded-xl">
-              <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-              <span>Multi-Tenant Enterprise RBAC</span>
-            </div>
-            <div className="flex items-center gap-2.5 bg-slate-900/60 border border-border p-3 rounded-xl">
-              <Clock className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>Real-Time Biometric Clock In</span>
-            </div>
-            <div className="flex items-center gap-2.5 bg-slate-900/60 border border-border p-3 rounded-xl">
-              <Award className="h-4 w-4 text-indigo-400 shrink-0" />
-              <span>1-Click PDF Payslip Generator</span>
-            </div>
-            <div className="flex items-center gap-2.5 bg-slate-900/60 border border-border p-3 rounded-xl">
-              <TrendingUp className="h-4 w-4 text-cyan-400 shrink-0" />
-              <span>360° Appraisals & Performance</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column - Auth Card */}
-        <div className="lg:col-span-5 w-full">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-            className="rounded-3xl glass-card p-8 shadow-2xl relative overflow-hidden"
-          >
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary via-indigo-500 to-cyan-400" />
-
-            <div className="space-y-2 text-center mb-6">
-              <h2 className="text-2xl font-bold text-foreground tracking-tight">Account Login</h2>
-              <p className="text-xs text-muted-foreground">Sign in to access your HRMS workspace</p>
-            </div>
-
-            {/* Static Credentials Info */}
-            <div className="mb-6 p-3 rounded-xl bg-primary/10 border border-primary/20 text-xs space-y-2">
-              <div className="font-semibold text-primary flex items-center justify-between">
-                <span>Demo Credentials:</span>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {serverError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md text-red-500 text-sm text-center">
+                {serverError}
               </div>
-              <div className="grid grid-cols-1 gap-2 text-muted-foreground">
-                <div className="bg-slate-950/60 p-2 rounded-md border border-border">
-                  <div className="font-medium text-foreground mb-1">Admin (Ankit Sethi - EMP-1001)</div>
-                  <div>admin@kenzo.com / Admin@123</div>
-                </div>
-                <div className="bg-slate-950/60 p-2 rounded-md border border-border">
-                  <div className="font-medium text-foreground mb-1">Employee (Sujal Kumar - EMP-1002)</div>
-                  <div>employee@kenzo.com / Emp@123</div>
-                </div>
-              </div>
-            </div>
+            )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {serverError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-md text-red-500 text-sm">
-                  {serverError}
-                </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground">Work Email</Label>
+              <Input
+                type="email"
+                placeholder="name@company.com"
+                className="bg-slate-950/80 border-border text-foreground focus:border-primary h-10"
+                {...register("email")}
+              />
+              {errors.email && (
+                <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
               )}
+            </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">Work Email</Label>
-                <Input
-                  type="email"
-                  placeholder="name@company.com"
-                  className="bg-slate-950/80 border-border text-foreground focus:border-primary h-10"
-                  {...register("email")}
-                />
-                {errors.email && (
-                  <p className="text-xs text-red-500">{errors.email.message}</p>
-                )}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-foreground">Password</Label>
+                <a href="#" className="text-xs font-medium text-primary hover:text-primary/80">Forgot password?</a>
               </div>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                className="bg-slate-950/80 border-border text-foreground focus:border-primary h-10"
+                {...register("password")}
+              />
+              {errors.password && (
+                <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
+              )}
+            </div>
 
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-foreground">Password</Label>
-                  <a href="#" className="text-xs font-medium text-primary hover:text-primary/80">Forgot password?</a>
-                </div>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  className="bg-slate-950/80 border-border text-foreground focus:border-primary h-10"
-                  {...register("password")}
-                />
-                {errors.password && (
-                  <p className="text-xs text-red-500">{errors.password.message}</p>
-                )}
-              </div>
+            <div className="flex items-center space-x-2 py-1">
+              <Checkbox id="login-remember" {...register("rememberMe")} className="border-border data-[state=checked]:bg-primary" />
+              <label htmlFor="login-remember" className="text-xs font-medium text-muted-foreground cursor-pointer">
+                Remember me for 30 days
+              </label>
+            </div>
 
-              <div className="flex items-center space-x-2 py-1">
-                <Checkbox id="login-remember" {...register("rememberMe")} className="border-border data-[state=checked]:bg-primary" />
-                <label htmlFor="login-remember" className="text-xs font-medium text-muted-foreground cursor-pointer">
-                  Remember me for 30 days
-                </label>
-              </div>
-
-              <Button 
-                type="submit" 
-                disabled={isLoading}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-11 shadow-lg text-sm"
-              >
-                {isLoading ? "Authenticating..." : "Sign In to HRMS"}
-                {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
-              </Button>
-            </form>
-          </motion.div>
-        </div>
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-11 shadow-lg text-sm"
+            >
+              {isLoading ? "Authenticating..." : "Sign In to HRMS"}
+              {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+            </Button>
+          </form>
+        </motion.div>
       </main>
 
-      <footer className="relative z-20 border-t border-border bg-slate-950/90 py-4 px-6 text-center text-xs text-muted-foreground max-w-7xl w-full mx-auto">
-        © 2026 Kenzo HRMS. Smart Workforce Management for Modern Enterprises.
+      <footer className="relative z-20 border-t border-border bg-slate-950/90 py-4 px-6 text-center text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between max-w-7xl w-full mx-auto">
+        <div>© 2026 Kenzo HRMS. Enterprise Multi-Tenant Platform.</div>
+        <div className="flex items-center gap-4 mt-2 sm:mt-0">
+          <span className="flex items-center gap-1.5"><Lock className="h-3 w-3 text-emerald-400" /> SSL Encrypted</span>
+          <span className="flex items-center gap-1.5"><ShieldCheck className="h-3 w-3 text-blue-400" /> SOC2 Type II Certified</span>
+        </div>
       </footer>
     </div>
   )
