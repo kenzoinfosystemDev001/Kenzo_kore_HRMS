@@ -24,6 +24,13 @@
     "db:studio": "npm run db:studio -w apps/api",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
   },
+  "devDependencies": {
+    "prisma": "~5.22.0"
+  },
+  "overrides": {
+    "prisma": "~5.22.0",
+    "@prisma/client": "~5.22.0"
+  },
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
