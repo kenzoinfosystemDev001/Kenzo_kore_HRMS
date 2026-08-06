@@ -6,8 +6,13 @@ import { Providers } from "@/providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Kenzo HRMS",
+  title: "Kenzo HRMS - Enterprise Workforce Platform",
   description: "Enterprise Human Resource Management System",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({

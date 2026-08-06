@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client"
 
 import * as React from "react"
@@ -111,16 +112,12 @@ export function Sidebar() {
             animate={{ opacity: 1 }}
             className="flex items-center gap-2.5 font-extrabold text-white text-lg tracking-tight"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-400 text-white font-black shadow-lg shadow-blue-500/20 ring-1 ring-white/20">
-              K
-            </div>
+            <img src="/logo.png" alt="Kenzo Logo" className="h-9 w-9 object-contain rounded-xl" />
             <span>Kenzo<span className="text-blue-500 font-normal">HRMS</span></span>
           </motion.div>
         )}
         {collapsed && (
-          <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-400 font-black text-white shadow-md">
-            K
-          </div>
+          <img src="/logo.png" alt="Kenzo Logo" className="mx-auto h-9 w-9 object-contain rounded-xl" />
         )}
         <Button
           variant="ghost"

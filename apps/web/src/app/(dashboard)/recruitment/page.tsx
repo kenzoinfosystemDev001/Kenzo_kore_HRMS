@@ -21,20 +21,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 
-const initialCandidates = [
-  { id: "CND-101", name: "Alex Rivera", role: "Senior Frontend Engineer", stage: "Technical Interview", rating: 4.9, email: "alex.r@example.com", appliedDate: "Aug 01, 2026", source: "LinkedIn" },
-  { id: "CND-102", name: "Sophia Chen", role: "Product Designer (UI/UX)", stage: "HR Screening", rating: 4.7, email: "sophia.c@example.com", appliedDate: "Aug 02, 2026", source: "Career Portal" },
-  { id: "CND-103", name: "Marcus Vance", role: "DevOps / Infrastructure Lead", stage: "Offer Extended", rating: 5.0, email: "marcus.v@example.com", appliedDate: "Jul 28, 2026", source: "Referral" },
-  { id: "CND-104", name: "Elena Rostova", role: "Backend Node.js Architect", stage: "Applied", rating: 4.5, email: "elena.r@example.com", appliedDate: "Aug 04, 2026", source: "Indeed" },
-  { id: "CND-105", name: "David Kim", role: "QA Automation Engineer", stage: "Technical Interview", rating: 4.8, email: "david.k@example.com", appliedDate: "Aug 03, 2026", source: "LinkedIn" },
-]
+interface Candidate {
+  id: string
+  name: string
+  role: string
+  stage: string
+  rating: number
+  email: string
+  appliedDate: string
+  source: string
+}
 
-const initialRequisitions = [
-  { id: "REQ-201", title: "Senior Frontend Engineer (Next.js / React)", dept: "Engineering", positions: "2 Open", applicants: 48, status: "Active", budget: "₹24L - ₹32L" },
-  { id: "REQ-202", title: "Principal DevOps Architect (AWS / Kubernetes)", dept: "Infrastructure", positions: "1 Open", applicants: 29, status: "Active", budget: "₹35L - ₹45L" },
-  { id: "REQ-203", title: "Lead Product Designer (Design System)", dept: "Design", positions: "1 Open", applicants: 34, status: "Active", budget: "₹20L - ₹28L" },
-  { id: "REQ-204", title: "Enterprise HR Manager", dept: "Human Resources", positions: "1 Open", applicants: 18, status: "Interviewing", budget: "₹18L - ₹24L" },
-]
+interface Requisition {
+  id: string
+  title: string
+  dept: string
+  positions: string
+  applicants: number
+  status: string
+  budget: string
+}
+
+const initialCandidates: Candidate[] = []
+const initialRequisitions: Requisition[] = []
 
 export default function RecruitmentPage() {
   const [candidates, setCandidates] = useState(initialCandidates)
@@ -162,7 +171,9 @@ export default function RecruitmentPage() {
             <Calendar className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-extrabold text-foreground">18 This Week</div>
+            <div className="text-2xl font-extrabold text-foreground">
+              {candidates.filter(c => c.stage.includes("Interview")).length} This Week
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Technical & HR rounds</p>
           </CardContent>
         </Card>
@@ -172,8 +183,10 @@ export default function RecruitmentPage() {
             <Award className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-extrabold text-foreground">5 Pending</div>
-            <p className="text-xs text-muted-foreground mt-1">80% acceptance rate</p>
+            <div className="text-2xl font-extrabold text-foreground">
+              {candidates.filter(c => c.stage.includes("Offer")).length} Pending
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Acceptance tracking</p>
           </CardContent>
         </Card>
       </div>
@@ -193,76 +206,100 @@ export default function RecruitmentPage() {
             <div className="bg-muted/40 p-4 rounded-xl space-y-3 border">
               <div className="flex items-center justify-between font-semibold text-sm border-b pb-2 text-foreground">
                 <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-slate-500" /> Applied</span>
-                <Badge variant="secondary">24</Badge>
+                <Badge variant="secondary">{candidates.filter(c => c.stage === "Applied").length}</Badge>
               </div>
-              <Card className="glass-card p-3 space-y-2 cursor-pointer">
-                <div className="flex justify-between items-start">
-                  <h4 className="font-semibold text-sm text-foreground">Elena Rostova</h4>
-                  <div className="flex items-center text-amber-500 text-xs font-bold">★ 4.5</div>
-                </div>
-                <p className="text-xs text-muted-foreground">Backend Node.js Architect</p>
-                <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t pt-2 mt-2">
-                  <span>Applied 1d ago</span>
-                  <Badge variant="outline" className="text-[9px]">Indeed</Badge>
-                </div>
-              </Card>
+              {candidates.filter(c => c.stage === "Applied").length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">No applicants in queue</p>
+              ) : (
+                candidates.filter(c => c.stage === "Applied").map((c) => (
+                  <Card key={c.id} className="glass-card p-3 space-y-2 cursor-pointer">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-semibold text-sm text-foreground">{c.name}</h4>
+                      <div className="flex items-center text-amber-500 text-xs font-bold">★ {c.rating}</div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{c.role}</p>
+                    <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t pt-2 mt-2">
+                      <span>{c.appliedDate}</span>
+                      <Badge variant="outline" className="text-[9px]">{c.source}</Badge>
+                    </div>
+                  </Card>
+                ))
+              )}
             </div>
 
             {/* Column 2: HR Screening */}
             <div className="bg-muted/40 p-4 rounded-xl space-y-3 border">
               <div className="flex items-center justify-between font-semibold text-sm border-b pb-2 text-foreground">
                 <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-purple-500" /> HR Screening</span>
-                <Badge variant="secondary">12</Badge>
+                <Badge variant="secondary">{candidates.filter(c => c.stage === "HR Screening").length}</Badge>
               </div>
-              <Card className="glass-card p-3 space-y-2 cursor-pointer">
-                <div className="flex justify-between items-start">
-                  <h4 className="font-semibold text-sm text-foreground">Sophia Chen</h4>
-                  <div className="flex items-center text-amber-500 text-xs font-bold">★ 4.7</div>
-                </div>
-                <p className="text-xs text-muted-foreground">Product Designer (UI/UX)</p>
-                <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t pt-2 mt-2">
-                  <span>Screening Scheduled</span>
-                  <Badge variant="outline" className="text-[9px]">Portal</Badge>
-                </div>
-              </Card>
+              {candidates.filter(c => c.stage === "HR Screening").length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">No candidates in screening</p>
+              ) : (
+                candidates.filter(c => c.stage === "HR Screening").map((c) => (
+                  <Card key={c.id} className="glass-card p-3 space-y-2 cursor-pointer">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-semibold text-sm text-foreground">{c.name}</h4>
+                      <div className="flex items-center text-amber-500 text-xs font-bold">★ {c.rating}</div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{c.role}</p>
+                    <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t pt-2 mt-2">
+                      <span>Screening Scheduled</span>
+                      <Badge variant="outline" className="text-[9px]">{c.source}</Badge>
+                    </div>
+                  </Card>
+                ))
+              )}
             </div>
 
             {/* Column 3: Technical Interview */}
             <div className="bg-muted/40 p-4 rounded-xl space-y-3 border">
               <div className="flex items-center justify-between font-semibold text-sm border-b pb-2 text-foreground">
                 <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-blue-500" /> Technical Round</span>
-                <Badge variant="secondary">8</Badge>
+                <Badge variant="secondary">{candidates.filter(c => c.stage === "Technical Interview").length}</Badge>
               </div>
-              <Card className="glass-card p-3 space-y-2 cursor-pointer">
-                <div className="flex justify-between items-start">
-                  <h4 className="font-semibold text-sm text-foreground">Alex Rivera</h4>
-                  <div className="flex items-center text-amber-500 text-xs font-bold">★ 4.9</div>
-                </div>
-                <p className="text-xs text-muted-foreground">Senior Frontend Engineer</p>
-                <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t pt-2 mt-2">
-                  <span>Round 2 Complete</span>
-                  <Badge variant="outline" className="text-[9px]">LinkedIn</Badge>
-                </div>
-              </Card>
+              {candidates.filter(c => c.stage === "Technical Interview").length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">No technical interviews</p>
+              ) : (
+                candidates.filter(c => c.stage === "Technical Interview").map((c) => (
+                  <Card key={c.id} className="glass-card p-3 space-y-2 cursor-pointer">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-semibold text-sm text-foreground">{c.name}</h4>
+                      <div className="flex items-center text-amber-500 text-xs font-bold">★ {c.rating}</div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{c.role}</p>
+                    <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t pt-2 mt-2">
+                      <span>Interview Round Active</span>
+                      <Badge variant="outline" className="text-[9px]">{c.source}</Badge>
+                    </div>
+                  </Card>
+                ))
+              )}
             </div>
 
             {/* Column 4: Offer Extended */}
             <div className="bg-muted/40 p-4 rounded-xl space-y-3 border">
               <div className="flex items-center justify-between font-semibold text-sm border-b pb-2 text-foreground">
                 <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Offer Extended</span>
-                <Badge variant="secondary">5</Badge>
+                <Badge variant="secondary">{candidates.filter(c => c.stage === "Offer Extended").length}</Badge>
               </div>
-              <Card className="glass-card p-3 space-y-2 cursor-pointer">
-                <div className="flex justify-between items-start">
-                  <h4 className="font-semibold text-sm text-foreground">Marcus Vance</h4>
-                  <div className="flex items-center text-amber-500 text-xs font-bold">★ 5.0</div>
-                </div>
-                <p className="text-xs text-muted-foreground">DevOps Infrastructure Lead</p>
-                <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t pt-2 mt-2">
-                  <span className="text-emerald-600 font-semibold">Offer Sent ₹38L</span>
-                  <Badge className="bg-emerald-600 text-white text-[9px]">Pending</Badge>
-                </div>
-              </Card>
+              {candidates.filter(c => c.stage === "Offer Extended").length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">No active offers</p>
+              ) : (
+                candidates.filter(c => c.stage === "Offer Extended").map((c) => (
+                  <Card key={c.id} className="glass-card p-3 space-y-2 cursor-pointer">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-semibold text-sm text-foreground">{c.name}</h4>
+                      <div className="flex items-center text-amber-500 text-xs font-bold">★ {c.rating}</div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{c.role}</p>
+                    <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t pt-2 mt-2">
+                      <span className="text-emerald-600 font-semibold">Offer Sent</span>
+                      <Badge className="bg-emerald-600 text-primary-foreground text-[9px]">Pending</Badge>
+                    </div>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         </TabsContent>

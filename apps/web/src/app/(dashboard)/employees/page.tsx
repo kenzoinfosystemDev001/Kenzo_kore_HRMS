@@ -13,17 +13,19 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth"
-
-const initialEmployeesList = [
-  { id: "EMP-1001", name: "Ankit Sethi", email: "admin@kenzo.com", role: "CEO & Founder", dept: "Management", status: "Active", joinDate: "Jan 01, 2020" },
-  { id: "EMP-1002", name: "Sujal Kumar", email: "employee@kenzo.com", role: "Software Architect", dept: "Engineering", status: "Active", joinDate: "Jan 15, 2024" },
-]
+import {
+  getStoredEmployees,
+  addStoredEmployee,
+  updateStoredEmployee,
+  deleteStoredEmployee,
+  EmployeeRecord,
+} from "@/lib/employee-store"
 
 export default function EmployeesPage() {
   const { isAdmin } = useAuth()
-  const [employeesList, setEmployeesList] = useState(initialEmployeesList)
+  const [employeesList, setEmployeesList] = useState<EmployeeRecord[]>(() => getStoredEmployees())
   const [searchTerm, setSearchTerm] = useState("")
-  const [editingEmp, setEditingEmp] = useState<typeof initialEmployeesList[0] | null>(null)
+  const [editingEmp, setEditingEmp] = useState<EmployeeRecord | null>(null)
 
   // New Employee Form State
   const [newName, setNewName] = useState("")
@@ -33,13 +35,14 @@ export default function EmployeesPage() {
   const [isAddOpen, setIsAddOpen] = useState(false)
 
   const handleDelete = (id: string) => {
-    setEmployeesList(employeesList.filter(e => e.id !== id))
+    const updated = deleteStoredEmployee(id)
+    setEmployeesList(updated)
   }
 
   const handleAddEmployee = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newName || !newEmail) return
-    const newEmp = {
+    const newEmp: EmployeeRecord = {
       id: `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
       name: newName,
       email: newEmail,
@@ -48,7 +51,8 @@ export default function EmployeesPage() {
       status: "Active",
       joinDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
     }
-    setEmployeesList([newEmp, ...employeesList])
+    const updated = addStoredEmployee(newEmp)
+    setEmployeesList(updated)
     setNewName("")
     setNewEmail("")
     setNewRole("")
@@ -57,7 +61,8 @@ export default function EmployeesPage() {
 
   const handleSaveEdit = () => {
     if (!editingEmp) return
-    setEmployeesList(employeesList.map(e => e.id === editingEmp.id ? editingEmp : e))
+    const updated = updateStoredEmployee(editingEmp)
+    setEmployeesList(updated)
     setEditingEmp(null)
   }
 

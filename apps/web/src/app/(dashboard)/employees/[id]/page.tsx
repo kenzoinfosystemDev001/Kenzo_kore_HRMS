@@ -1,48 +1,45 @@
 "use client"
 
 import * as React from "react"
-import { ArrowLeft, Edit } from "lucide-react"
+import { ArrowLeft, Edit, ShieldCheck, Lock, Save } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-import { mockEmployee } from "@/features/employees/mock-employee"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAuth } from "@/lib/auth"
+import { getStoredEmployees, updateStoredEmployee, EmployeeRecord } from "@/lib/employee-store"
 
 export default function EmployeeProfilePage() {
-  const [emp, setEmp] = React.useState(mockEmployee)
+  const { user, isAdmin } = useAuth()
+  const [emp, setEmp] = React.useState<EmployeeRecord | null>(() => {
+    const list = getStoredEmployees()
+    return list.find(e => e.email === user?.email) || list[1] || list[0]
+  })
   const [isEditOpen, setIsEditOpen] = React.useState(false)
+  const [formData, setFormData] = React.useState<Partial<EmployeeRecord>>(() => emp || {})
 
-  // Editable Form State
-  const [firstName, setFirstName] = React.useState(emp.firstName)
-  const [lastName, setLastName] = React.useState(emp.lastName)
-  const [designation, setDesignation] = React.useState(emp.designation)
-  const [department, setDepartment] = React.useState(emp.department)
-  const [phone, setPhone] = React.useState(emp.phone)
-  const [email, setEmail] = React.useState(emp.email)
-  const [location, setLocation] = React.useState(emp.location)
-  const [salary, setSalary] = React.useState("₹28,50,000 / year")
-  const [manager, setManager] = React.useState(emp.manager)
+  if (!emp) return null
+
+  // Security Check: Only Admin OR the specific employee themselves can view/edit confidential fields
+  const isSelf = user?.email?.toLowerCase() === emp.email.toLowerCase()
+  const canAccessConfidential = isAdmin || isSelf
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault()
-    setEmp({
+    if (!emp) return
+    const updated: EmployeeRecord = {
       ...emp,
-      firstName,
-      lastName,
-      designation,
-      department,
-      phone,
-      email,
-      location,
-      manager,
-    })
+      ...formData,
+    }
+    updateStoredEmployee(updated)
+    setEmp(updated)
     setIsEditOpen(false)
   }
 
@@ -57,100 +54,156 @@ export default function EmployeeProfilePage() {
           </Button>
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
-              Employee 360 Degree Profile
+              <ShieldCheck className="h-3.5 w-3.5" /> Employee 360° Confidential Profile
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight text-foreground">
-              Profile: <span className="hero-gradient-text">{emp.firstName} {emp.lastName}</span>
+              Profile: <span className="hero-gradient-text">{emp.name}</span>
             </h2>
           </div>
         </div>
 
-        {/* Edit Profile Modal Trigger */}
-        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-md shadow-primary/20">
-              <Edit className="mr-2 h-4 w-4" /> Edit Profile Details
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit Employee 360 Profile</DialogTitle>
-              <DialogDescription>Update master records for {emp.firstName} {emp.lastName} ({emp.id}).</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label>First Name</Label>
-                  <Input value={firstName} onChange={e => setFirstName(e.target.value)} required />
-                </div>
-                <div className="space-y-1">
-                  <Label>Last Name</Label>
-                  <Input value={lastName} onChange={e => setLastName(e.target.value)} required />
-                </div>
-              </div>
+        {/* Edit Profile Modal Trigger - Allowed for Admin OR Account Owner */}
+        {canAccessConfidential && (
+          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-md shadow-primary/20">
+                <Edit className="mr-2 h-4 w-4" /> Edit Profile Details
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Confidential Master Profile</DialogTitle>
+                <DialogDescription>Update employee records for {emp.name} ({emp.id}). Access authorized for HR Admin & Employee.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label>Full Name</Label>
+                    <Input value={formData.name || ""} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>EMP_ID</Label>
+                    <Input value={formData.id || ""} disabled className="bg-muted" />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label>Designation</Label>
-                  <Input value={designation} onChange={e => setDesignation(e.target.value)} required />
-                </div>
-                <div className="space-y-1">
-                  <Label>Department</Label>
-                  <Input value={department} onChange={e => setDepartment(e.target.value)} required />
-                </div>
-              </div>
+                  <div className="space-y-1">
+                    <Label>Current Address</Label>
+                    <Input value={formData.address || ""} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="A2 B59 Near Hanuman mandir phase 1..." />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Permanent Address</Label>
+                    <Input value={formData.permanentAddress || ""} onChange={e => setFormData({ ...formData, permanentAddress: e.target.value })} placeholder="Permanent home address..." />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label>Work Email</Label>
-                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-                </div>
-                <div className="space-y-1">
-                  <Label>Phone Number</Label>
-                  <Input value={phone} onChange={e => setPhone(e.target.value)} />
-                </div>
-              </div>
+                  <div className="space-y-1">
+                    <Label>Primary Phone Number</Label>
+                    <Input value={formData.phone || ""} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="6207210784" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Emergency Contact Number</Label>
+                    <Input value={formData.emergencyPhone || ""} onChange={e => setFormData({ ...formData, emergencyPhone: e.target.value })} placeholder="9835123735" />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label>Reporting Manager</Label>
-                  <Input value={manager} onChange={e => setManager(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Work Location</Label>
-                  <Input value={location} onChange={e => setLocation(e.target.value)} />
-                </div>
-              </div>
+                  <div className="space-y-1">
+                    <Label>Personal Mail</Label>
+                    <Input type="email" value={formData.personalEmail || ""} onChange={e => setFormData({ ...formData, personalEmail: e.target.value })} placeholder="sujalreal983@gmail.com" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Govt ID Type</Label>
+                    <Select value={formData.govtIdType || "Adhaar"} onValueChange={v => setFormData({ ...formData, govtIdType: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select ID Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Adhaar">Adhaar</SelectItem>
+                        <SelectItem value="PAN">PAN Card</SelectItem>
+                        <SelectItem value="Passport">Passport</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-1">
-                <Label>Compensation Package</Label>
-                <Input value={salary} onChange={e => setSalary(e.target.value)} />
-              </div>
+                  <div className="space-y-1">
+                    <Label>Govt ID Value</Label>
+                    <Input value={formData.govtIdValue || ""} onChange={e => setFormData({ ...formData, govtIdValue: e.target.value })} placeholder="591730412902" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Marital Status</Label>
+                    <Select value={formData.maritalStatus || "Single"} onValueChange={v => setFormData({ ...formData, maritalStatus: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Single">Single</SelectItem>
+                        <SelectItem value="Married">Married</SelectItem>
+                        <SelectItem value="Divorced">Divorced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <Button type="submit" className="w-full">Save Profile Updates</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+                  <div className="space-y-1">
+                    <Label>Dependent Nominee Name</Label>
+                    <Input value={formData.dependentNominee || ""} onChange={e => setFormData({ ...formData, dependentNominee: e.target.value })} placeholder="e.g. Spouse / Parent / Child Name" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Dependent Nominee DOB</Label>
+                    <Input type="date" value={formData.dependentNomineeDob || ""} onChange={e => setFormData({ ...formData, dependentNomineeDob: e.target.value })} />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Highest Qualification</Label>
+                    <Input value={formData.qualification || ""} onChange={e => setFormData({ ...formData, qualification: e.target.value })} placeholder="e.g. B.Tech / MBA / Ph.D" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Score Card / Rating</Label>
+                    <Input value={formData.scoreCard || ""} onChange={e => setFormData({ ...formData, scoreCard: e.target.value })} placeholder="e.g. Performance Rating (95/100)" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Medical Issues</Label>
+                    <Input value={formData.medicalIssues || "None"} onChange={e => setFormData({ ...formData, medicalIssues: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Medication</Label>
+                    <Input value={formData.medication || "None"} onChange={e => setFormData({ ...formData, medication: e.target.value })} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Medical History Notes</Label>
+                  <textarea className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={formData.medicalHistory || ""} onChange={e => setFormData({ ...formData, medicalHistory: e.target.value })} placeholder="Surgeries, chronic conditions, or medical history notes..." />
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Documents & Verification Record Link</Label>
+                  <Input value={formData.documents || ""} onChange={e => setFormData({ ...formData, documents: e.target.value })} placeholder="Link to employee document records / drive / verification IDs" />
+                </div>
+
+                <Button type="submit" className="w-full bg-primary text-primary-foreground font-semibold">
+                  <Save className="mr-2 h-4 w-4" /> Save Profile Changes
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
+      {/* Header Banner */}
       <div className="overflow-hidden rounded-2xl border bg-card glass-card">
         <div className="h-32 bg-gradient-to-r from-blue-600 via-indigo-600 to-amber-500"></div>
         <div className="px-6 pb-6 pt-0 relative sm:flex sm:items-end sm:space-x-5">
           <div className="relative -mt-16 flex h-28 w-28 items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl">
             <Avatar className="h-full w-full">
-              <AvatarImage src={`https://api.dicebear.com/9.x/notionists/svg?seed=${emp.firstName}`} />
+              <AvatarImage src={`https://api.dicebear.com/9.x/notionists/svg?seed=${emp.name}`} />
               <AvatarFallback className="text-2xl font-bold bg-primary text-primary-foreground">
-                {emp.firstName[0]}
-                {emp.lastName[0]}
+                {emp.name.split(" ")[0]?.[0]}
+                {emp.name.split(" ")[1]?.[0]}
               </AvatarFallback>
             </Avatar>
           </div>
           <div className="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-extrabold text-foreground">
-                {emp.firstName} {emp.lastName}
-              </h1>
-              <p className="text-muted-foreground text-sm font-medium">{emp.designation} • {emp.department}</p>
+              <h1 className="text-2xl font-extrabold text-foreground">{emp.name}</h1>
+              <p className="text-muted-foreground text-sm font-medium">{emp.role} • {emp.dept}</p>
             </div>
             <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 px-4 py-1 text-xs">
               {emp.status}
@@ -165,111 +218,148 @@ export default function EmployeeProfilePage() {
             <p className="mt-1 font-bold text-foreground">{emp.id}</p>
           </div>
           <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Work Email</p>
+            <p className="mt-1 font-bold text-foreground">{emp.email}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Department</p>
+            <p className="mt-1 font-bold text-foreground">{emp.dept}</p>
+          </div>
+          <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase">Date of Joining</p>
             <p className="mt-1 font-bold text-foreground">{emp.joinDate}</p>
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Reporting Manager</p>
-            <p className="mt-1 font-bold text-foreground">{emp.manager}</p>
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Work Location</p>
-            <p className="mt-1 font-bold text-foreground">{emp.location}</p>
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="personal" className="w-full">
+      {/* Main Tabs */}
+      <Tabs defaultValue="confidential" className="w-full">
         <TabsList className="bg-muted p-1">
-          <TabsTrigger value="personal">Personal Info</TabsTrigger>
-          <TabsTrigger value="employment">Employment Details</TabsTrigger>
-          <TabsTrigger value="compensation">Compensation & Pay</TabsTrigger>
-          <TabsTrigger value="documents">Documents & Verification</TabsTrigger>
+          <TabsTrigger value="confidential">Confidential Personal Record</TabsTrigger>
+          <TabsTrigger value="medical">Medical & Nominee Details</TabsTrigger>
+          <TabsTrigger value="qualification">Qualifications & Documents</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="personal" className="space-y-4 pt-2">
+        <TabsContent value="confidential" className="space-y-4 pt-2">
+          {!canAccessConfidential ? (
+            <Card className="glass-card border-rose-500/30 bg-rose-500/5">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <Lock className="h-12 w-12 text-rose-500 mb-3" />
+                <h3 className="text-lg font-bold text-foreground">Confidential Employee Profile</h3>
+                <p className="text-sm text-muted-foreground mt-1 max-w-md">
+                  Personal address, government IDs, nominee details, and emergency contacts are restricted. Only the account owner ({emp.name}) and HR Admin can view this record.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-foreground">Confidential Identity & Contact Information</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">Authorized View (Admin / Employee Owner)</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Primary Address</p>
+                  <p className="font-bold text-foreground mt-0.5">{emp.address || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Permanent Address</p>
+                  <p className="font-bold text-foreground mt-0.5">{emp.permanentAddress || "Not specified"}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Primary Phone Number</p>
+                  <p className="font-bold text-foreground mt-0.5">{emp.phone || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Emergency Contact Number</p>
+                  <p className="font-bold text-foreground mt-0.5">{emp.emergencyPhone || "Not specified"}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Personal Email</p>
+                  <p className="font-bold text-foreground mt-0.5">{emp.personalEmail || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Marital Status</p>
+                  <p className="font-bold text-foreground mt-0.5">{emp.maritalStatus || "Single"}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Govt ID Type & Value</p>
+                  <p className="font-bold text-foreground mt-0.5">{emp.govtIdType || "Adhaar"}: {emp.govtIdValue || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Account Status</p>
+                  <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">Verified Active</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="medical" className="space-y-4 pt-2">
+          {!canAccessConfidential ? (
+            <Card className="glass-card border-rose-500/30 bg-rose-500/5">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <Lock className="h-12 w-12 text-rose-500 mb-3" />
+                <h3 className="text-lg font-bold text-foreground">Restricted Medical & Family Data</h3>
+                <p className="text-sm text-muted-foreground mt-1 max-w-md">
+                  Nominee details and medical history are protected under HIPAA/GDPR privacy rules.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-foreground">Medical Records & Nominee Information</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Dependent Nominee Name</p>
+                  <p className="font-bold text-foreground mt-0.5">{emp.dependentNominee || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Nominee DOB</p>
+                  <p className="font-bold text-foreground mt-0.5">{emp.dependentNomineeDob || "Not specified"}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Medical Issues</p>
+                  <p className="font-bold text-foreground mt-0.5">{emp.medicalIssues || "None"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Medication</p>
+                  <p className="font-bold text-foreground mt-0.5">{emp.medication || "None"}</p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Medical History Notes</p>
+                  <p className="font-medium text-foreground mt-1 p-3 border rounded-xl bg-muted/20">{emp.medicalHistory || "No surgeries or chronic conditions recorded."}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="qualification" className="space-y-4 pt-2">
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">Personal Information</CardTitle>
+              <CardTitle className="text-lg font-bold text-foreground">Qualifications & Document Verification</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Email Address</p>
-                <p className="font-bold text-foreground mt-0.5">{emp.email}</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Highest Qualification</p>
+                <p className="font-bold text-foreground mt-0.5">{emp.qualification || "B.Tech Computer Science"}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Phone Number</p>
-                <p className="font-bold text-foreground mt-0.5">{emp.phone}</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Score Card / Rating</p>
+                <p className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{emp.scoreCard || "Performance Rating (95/100)"}</p>
               </div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Emergency Contact</p>
-                <p className="font-bold text-foreground mt-0.5">Jane Doe (+1 555-0192)</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Blood Group</p>
-                <p className="font-bold text-foreground mt-0.5">O+ Positive</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="employment" className="space-y-4 pt-2">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">Employment & Job Information</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Department</p>
-                <p className="font-bold text-foreground mt-0.5">{emp.department}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Designation</p>
-                <p className="font-bold text-foreground mt-0.5">{emp.designation}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Employment Type</p>
-                <p className="font-bold text-foreground mt-0.5">Full-Time Permanent</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Probation Status</p>
-                <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 mt-1">Confirmed / Passed</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="compensation" className="space-y-4 pt-2">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">Salary & Bank Details</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Annual CTC Package</p>
-                <p className="font-bold text-emerald-600 dark:text-emerald-400 text-lg mt-0.5">{salary}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Bank Account</p>
-                <p className="font-bold text-foreground mt-0.5">HDFC Bank ••••••4092</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="documents" className="space-y-4 pt-2">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">Verified Documents</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between p-3 border rounded-xl bg-muted/30">
-                <span className="font-semibold text-xs text-foreground">Employment Agreement & Offer Letter</span>
-                <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]">Verified</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-xl bg-muted/30">
-                <span className="font-semibold text-xs text-foreground">Identity & Passport Proof</span>
-                <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]">Verified</Badge>
+              <div className="md:col-span-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Verification Records & Documents</p>
+                <p className="font-medium text-foreground mt-1 p-3 border rounded-xl bg-muted/20">{emp.documents || "Verified Records On File"}</p>
               </div>
             </CardContent>
           </Card>
