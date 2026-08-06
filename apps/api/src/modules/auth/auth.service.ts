@@ -31,7 +31,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.validateUser(dto.email, dto.password);
     const tokens = await this.generateTokens(user);
-    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+    await this.prisma.user.update({ where: { id: user.id }, data: { updatedAt: new Date() } });
     return {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
@@ -84,7 +84,7 @@ export class AuthService {
       },
     });
     if (!user) throw new UnauthorizedException();
-    const { passwordHash, mfaSecret, ...userData } = user;
+    const { passwordHash, ...userData } = user;
     return userData;
   }
 
