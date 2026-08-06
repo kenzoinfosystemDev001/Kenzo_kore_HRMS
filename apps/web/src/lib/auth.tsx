@@ -111,6 +111,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, isLoading, pathname, router])
 
+interface UserRoleItem {
+  role?: {
+    slug?: string
+    name?: string
+  }
+}
+
+interface ApiUserResponse {
+  id?: string
+  email?: string
+  firstName?: string
+  lastName?: string
+  role?: string
+}
+
+interface ApiLoginResponse {
+  accessToken: string
+  refreshToken: string
+  user: ApiUserResponse
+}
+
+interface ApiProfileResponse {
+  id?: string
+  email?: string
+  firstName?: string
+  lastName?: string
+  userRoles?: UserRoleItem[]
+  employee?: {
+    department?: {
+      name?: string
+    }
+  }
+}
+
   const login = useCallback(
     async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
       setIsLoading(true)
@@ -119,18 +153,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         // 1. Try real API backend
-        const response = await apiClient.post<{ accessToken: string; refreshToken: string; user: any }>('/auth/login', { email: normalizedEmail, password }, { skipAuth: true })
+        const response = await apiClient.post<ApiLoginResponse>('/auth/login', { email: normalizedEmail, password }, { skipAuth: true })
         
         if (response && response.accessToken) {
           localStorage.setItem(TOKEN_KEY, response.accessToken)
           
           let role: UserRole = isAnkitAdmin ? 'admin' : (response.user?.role === 'admin' ? 'admin' : 'employee')
-          let profile: any = null
+          let profile: ApiProfileResponse | null = null
 
           try {
-            profile = await apiClient.get<any>('/auth/me')
+            profile = await apiClient.get<ApiProfileResponse>('/auth/me')
             const hasAdminRole = isAnkitAdmin || profile.userRoles?.some(
-              (ur: any) => {
+              (ur: UserRoleItem) => {
                 const s = (ur.role?.slug || '').toLowerCase()
                 const n = (ur.role?.name || '').toLowerCase()
                 return s === 'super-admin' || s === 'admin' || s === 'hr' || s === 'hr-manager' || n === 'super_admin' || n === 'admin' || n === 'hr'
@@ -156,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsLoading(false)
           return { success: true }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('API Login failed, trying fallback', error)
       }
 

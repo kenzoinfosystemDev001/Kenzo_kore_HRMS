@@ -9,7 +9,7 @@ export function usePayslips() {
     queryKey: ['payslips'],
     queryFn: async () => {
       try {
-        const data = await apiClient.get<{ data: any[] }>('/payslips')
+        const data = await apiClient.get<{ data: PayslipRecord[] }>('/payslips')
         return data.data || data
       } catch {
         return getStoredPayslips()

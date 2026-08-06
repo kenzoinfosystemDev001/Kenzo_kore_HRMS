@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
-import { Clock, CheckCircle2, AlertCircle, XCircle, CalendarOff, Calendar as CalendarIcon, Filter, Download, UserCheck, Activity, ShieldAlert, Sparkles, FileText, Check } from "lucide-react"
+import React, { useState } from "react"
+import { Clock, CheckCircle2, AlertCircle, XCircle, Download, UserCheck, Activity, ShieldAlert, Sparkles, FileText } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -23,7 +23,7 @@ import {
 } from "@/lib/attendance-store"
 
 export default function AttendancePage() {
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
   const [records, setRecords] = useState<AttendanceRecord[]>(() => getStoredAttendance())
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDept, setSelectedDept] = useState("all")
@@ -36,8 +36,6 @@ export default function AttendancePage() {
   const [regCheckOut, setRegCheckOut] = useState("06:00 PM")
   const [regReason, setRegReason] = useState("")
 
-  const currentTimeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-
   // Find logged-in employee record
   const myRecord = records.find(r => r.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
   const isMyClockedIn = !!(myRecord && myRecord.checkIn && !myRecord.checkOut)
@@ -47,7 +45,6 @@ export default function AttendancePage() {
   const countLate = records.filter(r => r.status === "Late").length
   const countHalfDay = records.filter(r => r.status === "Half Day").length
   const countAbsent = records.filter(r => r.status === "Absent").length
-  const countOnLeave = records.filter(r => r.status === "On Leave").length
   const totalEmployees = records.length
 
   const handleToggleClock = () => {
@@ -83,7 +80,7 @@ export default function AttendancePage() {
     return matchesSearch && matchesDept && matchesStatus
   })
 
-  const getStatusBadge = (status: AttendanceStatus, notes?: string) => {
+  const getStatusBadge = (status: AttendanceStatus) => {
     switch (status) {
       case "Present":
         return <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold">Present</Badge>
@@ -304,7 +301,7 @@ export default function AttendancePage() {
           <CardContent className="space-y-6">
             {/* Compliance Bar */}
             <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 text-center">
-              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Today's Attendance Rate</div>
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Today&apos;s Attendance Rate</div>
               <div className="text-3xl font-black text-foreground mt-1">
                 {totalEmployees > 0 ? Math.round(((countPresent + countLate + countHalfDay) / totalEmployees) * 100) : 0}%
               </div>

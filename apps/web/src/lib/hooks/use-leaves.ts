@@ -9,7 +9,7 @@ export function useLeaves() {
     queryKey: ['leaves'],
     queryFn: async () => {
       try {
-        const data = await apiClient.get<{ data: any[] }>('/leaves')
+        const data = await apiClient.get<{ data: LeaveRequestRecord[] }>('/leaves')
         return data.data || data
       } catch {
         return getStoredLeaves()

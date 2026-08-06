@@ -49,7 +49,8 @@ export function calculateDuration(checkInStr: string, checkOutStr: string): stri
   try {
     const parseTime = (tStr: string) => {
       const [time, modifier] = tStr.split(" ")
-      let [h, m] = time.split(":").map(Number)
+      const [parsedH, m] = time.split(":").map(Number)
+      let h = parsedH
       if (modifier === "PM" && h < 12) h += 12
       if (modifier === "AM" && h === 12) h = 0
       return h * 60 + m

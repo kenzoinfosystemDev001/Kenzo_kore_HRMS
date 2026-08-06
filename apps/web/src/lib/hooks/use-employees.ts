@@ -10,7 +10,7 @@ export function useEmployees() {
     queryKey: ['employees'],
     queryFn: async () => {
       try {
-        const data = await apiClient.get<{ data: any[] }>('/employees')
+        const data = await apiClient.get<{ data: EmployeeRecord[] }>('/employees')
         return data.data || data
       } catch {
         // Fallback to localStorage if API unavailable
