@@ -81,13 +81,21 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma@5 generate --schema=apps/api/prisma/schema.prisma
       
+      - name: Run database migrations
+        run: npx prisma db push --schema=apps/api/prisma/schema.prisma --accept-data-loss
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/kenzo_hrms_test
+      
       - name: Run backend tests
         run: npm run test -w apps/api -- --coverage --passWithNoTests
         env:
           DATABASE_URL: postgresql://test_user:test_password@localhost:5432/kenzo_hrms_test
-          JWT_SECRET: test-secret
+          JWT_SECRET: test-jwt-secret-for-ci-pipeline
           REDIS_HOST: localhost
           REDIS_PORT: 6379
+          NODE_ENV: test
+          PORT: 4000
+          FRONTEND_URL: http://localhost:3000
 
   build:
     name: Build
@@ -108,36 +116,49 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma@5 generate --schema=apps/api/prisma/schema.prisma
       
+      - name: Build backend
+        run: npm run build -w apps/api
+      
       - name: Build frontend
         run: npm run build -w apps/web
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:4000
-      
-      - name: Build backend
-        run: npm run build -w apps/api
+          NEXT_PUBLIC_API_URL: ${{ secrets.API_URL || 'http://localhost:4000' }}
 
-  deploy-preview:
-    name: Deploy Preview (Vercel)
-    runs-on: ubuntu-latest
-    needs: [build, test]
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Vercel Preview
-        run: echo "Deploy to Vercel preview environment"
-        # Add Vercel deployment steps
-
-  deploy-production:
-    name: Deploy Production
+  docker:
+    name: Docker Build
     runs-on: ubuntu-latest
     needs: [build, test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy Frontend to Vercel
-        run: echo "Deploy frontend to production"
-        # Add Vercel production deployment
       
-      - name: Deploy Backend to AWS ECS
-        run: echo "Deploy backend to production"
-        # Add AWS ECS deployment
+      - name: Build API Docker image
+        run: docker build -f apps/api/Dockerfile -t kenzo-hrms-api:${{ github.sha }} .
+      
+      - name: Build Web Docker image
+        run: docker build -f apps/web/Dockerfile -t kenzo-hrms-web:${{ github.sha }} .
+
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Preview
+        run: echo "Preview deployment configured via Vercel GitHub integration"
+
+  deploy-production:
+    name: Deploy Production
+    runs-on: ubuntu-latest
+    needs: [build, test, docker]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy Frontend
+        run: echo "Frontend deployment via Vercel GitHub integration"
+      
+      - name: Deploy Backend
+        run: echo "Backend deployment to cloud provider"

@@ -1,15 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { ConfigService } from '@nestjs/config';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+  const logger = new Logger('Bootstrap');
   
+  app.use(helmet());
+  app.enableShutdownHooks();
+
   app.setGlobalPrefix('api', { exclude: ['/'] });
   
   app.useGlobalPipes(
@@ -38,9 +43,14 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/api/health', (req: any, res: any) => {
+    res.send({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   const port = configService.get<number>('PORT') || 3000;
   await app.listen(port);
   
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  logger.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();

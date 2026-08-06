@@ -4,6 +4,8 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { TenantId } from '../../common/decorators/tenant.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
 @ApiTags('Employees')
 @ApiBearerAuth()
@@ -14,7 +16,7 @@ export class EmployeesController {
 
   @Post()
   @RequirePermissions('employees:create')
-  create(@TenantId() tenantId: string, @Body() createEmployeeDto: any) {
+  create(@TenantId() tenantId: string, @Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeesService.create(tenantId, createEmployeeDto);
   }
 
@@ -32,7 +34,7 @@ export class EmployeesController {
 
   @Patch(':id')
   @RequirePermissions('employees:update')
-  update(@TenantId() tenantId: string, @Param('id') id: string, @Body() updateEmployeeDto: any) {
+  update(@TenantId() tenantId: string, @Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
     return this.employeesService.update(tenantId, id, updateEmployeeDto);
   }
 

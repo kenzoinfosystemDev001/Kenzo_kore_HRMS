@@ -16,7 +16,7 @@ export class AuthService {
 
   async validateUser(email: string, password: string) {
     const user = await this.prisma.user.findFirst({
-      where: { email, deletedAt: null },
+      where: { email, deletedAt: null, isActive: true },
       include: {
         userRoles: { include: { role: { include: { rolePermissions: { include: { permission: true } } } } } },
         tenant: true,

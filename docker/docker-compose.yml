@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database (for local development; production uses Neon)
+  # ─── PostgreSQL Database ───────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: kenzo-postgres
@@ -20,7 +20,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis (for caching, sessions, BullMQ)
+  # ─── Redis (Caching, Sessions, BullMQ) ─────────────────────
   redis:
     image: redis:7-alpine
     container_name: kenzo-redis
@@ -35,7 +35,50 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis Commander (Redis GUI - development only)
+  # ─── NestJS API ────────────────────────────────────────────
+  api:
+    build:
+      context: ../
+      dockerfile: apps/api/Dockerfile
+    container_name: kenzo-api
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgresql://kenzo_user:kenzo_password@postgres:5432/kenzo_hrms
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      NODE_ENV: production
+      PORT: 4000
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─── Next.js Web ───────────────────────────────────────────
+  web:
+    build:
+      context: ../
+      dockerfile: apps/web/Dockerfile
+    container_name: kenzo-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:4000
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # ─── Redis Commander (Dev Tools) ───────────────────────────
   redis-commander:
     image: rediscommander/redis-commander:latest
     container_name: kenzo-redis-commander
