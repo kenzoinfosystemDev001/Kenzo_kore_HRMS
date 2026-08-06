@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState } from "react"
-import { DollarSign, Users, Clock, CheckCircle2, PlayCircle, Download, FileText, Settings, AlertCircle, Eye, Printer, Building2, Calendar, User, Wallet } from "lucide-react"
+import React from "react"
+import { DollarSign, Users, Clock, CheckCircle2, PlayCircle, Download, FileText, Settings, AlertCircle, Eye, Wallet } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 import { useAuth } from "@/lib/auth"
 import { payrollStats, payrollHistory } from "@/features/payroll/data"
@@ -17,12 +16,7 @@ import { payrollStats, payrollHistory } from "@/features/payroll/data"
 const myPayslips: { id: string; month: string; gross: string; deductions: string; net: string; status: string; date: string }[] = []
 
 export default function PayrollPage() {
-  const { user, isAdmin } = useAuth()
-  const [selectedPayslip, setSelectedPayslip] = useState<typeof myPayslips[0] | null>(null)
-
-  const handlePrint = () => {
-    window.print()
-  }
+  const { isAdmin } = useAuth()
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -121,7 +115,7 @@ export default function PayrollPage() {
                         <TableCell className="font-semibold text-emerald-600">{payslip.net}</TableCell>
                         <TableCell>{getStatusBadge(payslip.status)}</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="outline" size="sm" onClick={() => setSelectedPayslip(payslip)}>
+                          <Button variant="outline" size="sm">
                             <Eye className="mr-2 h-3.5 w-3.5" /> View Payslip
                           </Button>
                         </TableCell>

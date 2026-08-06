@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Building2, Users, FolderTree, BadgeCheck, Plus, Building, Globe, MapPin, Mail, Phone, Clock, DollarSign, Trash2, UserPlus, UserMinus, Edit } from "lucide-react"
+import { Building2, Users, FolderTree, BadgeCheck, Plus, Building, Globe, Trash2, UserPlus, UserMinus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"

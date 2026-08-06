@@ -1,34 +1,23 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { 
-  Building2, 
   ArrowRight, 
   ShieldCheck, 
-  Users, 
-  Zap, 
-  CheckCircle2, 
-  Star, 
   Sparkles, 
-  Lock, 
-  Globe, 
   TrendingUp, 
   Clock, 
-  Award,
-  ChevronRight
+  Award
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth"
 
 const loginSchema = z.object({
@@ -40,7 +29,6 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
-  const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(false)
   const [serverError, setServerError] = React.useState<string | null>(null)
   const { login } = useAuth()
@@ -66,7 +54,7 @@ export default function LoginPage() {
       if (!result.success) {
         setServerError(result.error || "Login failed")
       }
-    } catch (err) {
+    } catch {
       setServerError("An unexpected error occurred.")
     } finally {
       setIsLoading(false)

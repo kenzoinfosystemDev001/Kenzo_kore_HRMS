@@ -1,26 +1,18 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { 
-  Building2, 
   ArrowRight, 
   ShieldCheck, 
-  Users, 
-  Zap, 
-  CheckCircle2, 
-  Star, 
   Sparkles, 
   Lock, 
-  Globe, 
   TrendingUp, 
   Clock, 
-  Award,
-  ChevronRight
+  Award
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -39,8 +31,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function HomePage() {
-  const router = useRouter()
-  const { login, isLoading: authLoading, user } = useAuth()
+  const { login, isLoading: authLoading } = useAuth()
   const [loginError, setLoginError] = React.useState<string | null>(null)
 
   const {

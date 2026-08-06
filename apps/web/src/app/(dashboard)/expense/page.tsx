@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Receipt, DollarSign, Clock, CheckCircle2, XCircle, Plus, Download, FileText, Filter } from "lucide-react"
+import { Receipt, DollarSign, Clock, CheckCircle2, Plus, FileText } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +9,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 
-const expenseClaims: any[] = []
+interface ExpenseClaim {
+  id: string
+  employee: string
+  category: string
+  merchant: string
+  date: string
+  amount: string
+  status: string
+}
+
+const expenseClaims: ExpenseClaim[] = []
 
 export default function ExpensePage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -26,6 +36,8 @@ export default function ExpensePage() {
         return <Badge variant="outline">{status}</Badge>
     }
   }
+
+  const filtered = expenseClaims.filter(c => c.employee.toLowerCase().includes(searchTerm.toLowerCase()))
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -77,7 +89,7 @@ export default function ExpensePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">N/A</div>
-            <p className="text-xs text-muted-foreground mt-1">Faster than industry avg</p>
+            <p className="text-xs text-muted-foreground mt-1">No settled claims</p>
           </CardContent>
         </Card>
       </div>
@@ -98,31 +110,28 @@ export default function ExpensePage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Claim ID</TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Merchant</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {expenseClaims.length === 0 ? (
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Receipt className="h-12 w-12 text-muted-foreground/30 mb-3" />
+              <p className="text-sm font-medium text-foreground">No expense claims submitted yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Click &quot;Submit Expense Claim&quot; to create a new reimbursement.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center">
-                      <Receipt className="h-8 w-8 mb-2 opacity-50" />
-                      <p>No expense claims submitted yet</p>
-                    </div>
-                  </TableCell>
+                  <TableHead>Claim ID</TableHead>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Merchant</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ) : (
-                expenseClaims.map((claim) => (
+              </TableHeader>
+              <TableBody>
+                {filtered.map((claim) => (
                   <TableRow key={claim.id}>
                     <TableCell className="font-mono text-xs">{claim.id}</TableCell>
                     <TableCell className="font-medium">{claim.employee}</TableCell>
@@ -137,10 +146,10 @@ export default function ExpensePage() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

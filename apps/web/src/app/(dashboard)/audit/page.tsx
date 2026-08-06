@@ -1,14 +1,13 @@
 "use client"
 
 import React from "react"
-import { ShieldCheck, Search, Download, Lock, Key, UserCheck, Eye } from "lucide-react"
+import { ShieldCheck, Download } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 
-const auditLogs: any[] = []
+const auditLogs: { id: string; user: string; action: string; ip: string; timestamp: string }[] = []
 
 export default function AuditPage() {
   return (
@@ -23,23 +22,25 @@ export default function AuditPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 mb-6">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Events Recorded</CardTitle>
             <ShieldCheck className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">0 Events</div>
+            <p className="text-xs text-muted-foreground mt-1">Real-time system telemetry</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Security Alerts</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-red-500" />
+            <ShieldCheck className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">0 Threats</div>
+            <p className="text-xs text-muted-foreground mt-1">System secure</p>
           </CardContent>
         </Card>
       </div>
@@ -47,45 +48,39 @@ export default function AuditPage() {
       <Card>
         <CardHeader>
           <CardTitle>System Audit Trail</CardTitle>
-          <CardDescription>Real-time stream of security events across tenant scope.</CardDescription>
+          <CardDescription>Detailed log of administrative activities and system modifications.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Audit ID</TableHead>
-                <TableHead>Action Event</TableHead>
-                <TableHead>Performed By</TableHead>
-                <TableHead>Target Entity</TableHead>
-                <TableHead>Client IP</TableHead>
-                <TableHead>Timestamp</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {auditLogs.length === 0 ? (
+          {auditLogs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <ShieldCheck className="h-12 w-12 text-muted-foreground/30 mb-3" />
+              <p className="text-sm font-medium text-foreground">No audit log entries recorded yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Administrative actions will automatically log here.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    No audit log entries recorded yet
-                  </TableCell>
+                  <TableHead>Event ID</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>Timestamp</TableHead>
                 </TableRow>
-              ) : (
-                auditLogs.map((log) => (
+              </TableHeader>
+              <TableBody>
+                {auditLogs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="font-mono text-xs font-semibold">{log.id}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono text-[11px] bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                        {log.action}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{log.user}</TableCell>
-                    <TableCell>{log.entity}</TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{log.ip}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{log.timestamp}</TableCell>
+                    <TableCell>{log.id}</TableCell>
+                    <TableCell>{log.user}</TableCell>
+                    <TableCell>{log.action}</TableCell>
+                    <TableCell>{log.ip}</TableCell>
+                    <TableCell>{log.timestamp}</TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

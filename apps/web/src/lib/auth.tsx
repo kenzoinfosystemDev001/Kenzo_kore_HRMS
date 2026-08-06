@@ -87,25 +87,18 @@ export const EMPLOYEE_ALLOWED_ROUTES = [
 
 // ─── Provider ───────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
-  const pathname = usePathname()
-
-  // Hydrate session from localStorage
-  useEffect(() => {
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    if (typeof window === "undefined") return null
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored) as AuthUser
-        setUser(parsed)
-      }
+      return stored ? (JSON.parse(stored) as AuthUser) : null
     } catch {
-      localStorage.removeItem(STORAGE_KEY)
-    } finally {
-      setIsLoading(false)
+      return null
     }
-  }, [])
+  })
+  const [isLoading] = useState(false)
+  const router = useRouter()
+  const pathname = usePathname()
 
   // Route guard: redirect unauthenticated users away from dashboard
   useEffect(() => {

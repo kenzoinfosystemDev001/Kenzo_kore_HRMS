@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { Briefcase, UserPlus, CheckSquare, Clock, Laptop, ShieldCheck, FileCheck, Users, ChevronRight } from "lucide-react"
+import { UserPlus, CheckSquare, Laptop, FileCheck, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +9,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
-const newHires: any[] = []
+interface NewHire {
+  name: string
+  role: string
+  dept: string
+  joinDate: string
+  progress: number
+  buddy: string
+  status: string
+}
+
+const newHires: NewHire[] = []
 
 export default function OnboardingPage() {
   return (
@@ -52,7 +62,7 @@ export default function OnboardingPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">0 Devices</div>
-            <p className="text-xs text-muted-foreground mt-1">MacBooks assigned</p>
+            <p className="text-xs text-muted-foreground mt-1">Devices assigned</p>
           </CardContent>
         </Card>
         <Card>
@@ -73,30 +83,26 @@ export default function OnboardingPage() {
           <CardDescription>Track new team members through setup and orientation.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Role & Department</TableHead>
-                <TableHead>Joining Date</TableHead>
-                <TableHead>Onboarding Buddy</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {newHires.length === 0 ? (
+          {newHires.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Users className="h-12 w-12 text-muted-foreground/30 mb-3" />
+              <p className="text-sm font-medium text-foreground">No active onboarding pipelines</p>
+              <p className="text-xs text-muted-foreground mt-1">Click &quot;Start Onboarding&quot; to begin new hire orientation.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center">
-                      <Users className="h-8 w-8 mb-2 opacity-50" />
-                      <p>No active onboarding pipelines</p>
-                    </div>
-                  </TableCell>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Role & Department</TableHead>
+                  <TableHead>Joining Date</TableHead>
+                  <TableHead>Onboarding Buddy</TableHead>
+                  <TableHead>Progress</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ) : (
-                newHires.map((hire, i) => (
+              </TableHeader>
+              <TableBody>
+                {newHires.map((hire, i) => (
                   <TableRow key={i}>
                     <TableCell className="font-medium">{hire.name}</TableCell>
                     <TableCell>{hire.role} • <span className="text-muted-foreground">{hire.dept}</span></TableCell>
@@ -113,16 +119,11 @@ export default function OnboardingPage() {
                         {hire.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        View Checklist <ChevronRight className="ml-1 h-3.5 w-3.5" />
-                      </Button>
-                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

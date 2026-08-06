@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { TrendingUp, Target, Award, Star, Users, CheckCircle2, Plus } from "lucide-react"
+import { TrendingUp, Target, Star, CheckCircle2, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +10,15 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-const okrs: any[] = []
+interface OKR {
+  title: string
+  category: string
+  progress: number
+  weight: string
+  owner: string
+}
+
+const okrs: OKR[] = []
 
 export default function PerformancePage() {
   return (
@@ -33,7 +41,7 @@ export default function PerformancePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">No Active Cycle</div>
-            <p className="text-xs text-muted-foreground mt-1">Ends Sep 30, 2026</p>
+            <p className="text-xs text-muted-foreground mt-1">Configure cycle in settings</p>
           </CardContent>
         </Card>
         <Card>
@@ -53,7 +61,7 @@ export default function PerformancePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">0 / 0</div>
-            <p className="text-xs text-muted-foreground mt-1">87% submitted</p>
+            <p className="text-xs text-muted-foreground mt-1">0% submitted</p>
           </CardContent>
         </Card>
         <Card>
@@ -81,29 +89,26 @@ export default function PerformancePage() {
               <CardDescription>Aligned team key results for current cycle.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Objective / Key Result</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Owner</TableHead>
-                    <TableHead>Weight</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {okrs.length === 0 ? (
+              {okrs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Target className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                  <p className="text-sm font-medium text-foreground">No OKRs configured yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click &quot;Create Goal (OKR)&quot; to define quarterly objectives.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                        <div className="flex flex-col items-center justify-center">
-                          <Target className="h-8 w-8 mb-2 opacity-50" />
-                          <p>No OKRs configured yet</p>
-                        </div>
-                      </TableCell>
+                      <TableHead>Objective / Key Result</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Owner</TableHead>
+                      <TableHead>Weight</TableHead>
+                      <TableHead>Progress</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
-                  ) : (
-                    okrs.map((okr, i) => (
+                  </TableHeader>
+                  <TableBody>
+                    {okrs.map((okr, i) => (
                       <TableRow key={i}>
                         <TableCell className="font-medium">{okr.title}</TableCell>
                         <TableCell>{okr.category}</TableCell>
@@ -121,10 +126,10 @@ export default function PerformancePage() {
                           </Badge>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -136,7 +141,7 @@ export default function PerformancePage() {
               <CardDescription>Status of active performance evaluation forms.</CardDescription>
             </CardHeader>
             <CardContent className="p-6 text-sm text-muted-foreground">
-              360° reviews are actively open for Q3 cycle. 87% of self-evaluations have been submitted to managers for final review.
+              No active appraisal review cycles configured.
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { FolderKanban, Clock, Users, CheckCircle2, Plus, Calendar, TrendingUp, UserPlus, UserMinus, Trash2 } from "lucide-react"
+import { FolderKanban, Users, CheckCircle2, Plus, Calendar, TrendingUp, UserPlus, UserMinus, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"

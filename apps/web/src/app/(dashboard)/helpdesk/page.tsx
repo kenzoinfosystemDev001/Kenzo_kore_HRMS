@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { HeadphonesIcon, MessageSquare, Clock, CheckCircle2, AlertCircle, Plus, Search, FileText } from "lucide-react"
+import { HeadphonesIcon, MessageSquare, Clock, CheckCircle2, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +9,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 
-const tickets: any[] = []
+interface HelpdeskTicket {
+  id: string
+  subject: string
+  category: string
+  raisedBy: string
+  assignedTo: string
+  priority: string
+  status: string
+  sla: string
+}
+
+const tickets: HelpdeskTicket[] = []
 
 export default function HelpdeskPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -26,6 +37,8 @@ export default function HelpdeskPage() {
         return <Badge variant="outline">{priority}</Badge>
     }
   }
+
+  const filtered = tickets.filter(t => t.subject.toLowerCase().includes(searchTerm.toLowerCase()))
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -57,7 +70,7 @@ export default function HelpdeskPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">N/A</div>
-            <p className="text-xs text-muted-foreground mt-1">Resolved within SLA target</p>
+            <p className="text-xs text-muted-foreground mt-1">No ticket data</p>
           </CardContent>
         </Card>
         <Card>
@@ -67,7 +80,7 @@ export default function HelpdeskPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">N/A</div>
-            <p className="text-xs text-muted-foreground mt-1">First response under 15m</p>
+            <p className="text-xs text-muted-foreground mt-1">No closed tickets</p>
           </CardContent>
         </Card>
         <Card>
@@ -77,7 +90,7 @@ export default function HelpdeskPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">N/A</div>
-            <p className="text-xs text-muted-foreground mt-1">Based on 210 responses</p>
+            <p className="text-xs text-muted-foreground mt-1">No responses yet</p>
           </CardContent>
         </Card>
       </div>
@@ -98,47 +111,42 @@ export default function HelpdeskPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ticket ID</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Raised By</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>SLA Target</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tickets.length === 0 ? (
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <HeadphonesIcon className="h-12 w-12 text-muted-foreground/30 mb-3" />
+              <p className="text-sm font-medium text-foreground">No support tickets</p>
+              <p className="text-xs text-muted-foreground mt-1">Click &quot;Raise Support Ticket&quot; to create a new ticket.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center">
-                      <HeadphonesIcon className="h-8 w-8 mb-2 opacity-50" />
-                      <p>No support tickets</p>
-                    </div>
-                  </TableCell>
+                  <TableHead>Ticket ID</TableHead>
+                  <TableHead>Subject</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Raised By</TableHead>
+                  <TableHead>Assigned To</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>SLA</TableHead>
                 </TableRow>
-              ) : (
-                tickets.map((tkt) => (
-                  <TableRow key={tkt.id}>
-                    <TableCell className="font-mono text-xs font-semibold">{tkt.id}</TableCell>
-                    <TableCell className="font-medium max-w-xs truncate">{tkt.subject}</TableCell>
-                    <TableCell>{tkt.category}</TableCell>
-                    <TableCell>{tkt.raisedBy}</TableCell>
-                    <TableCell>{getPriorityBadge(tkt.priority)}</TableCell>
-                    <TableCell className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{tkt.sla}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((ticket) => (
+                  <TableRow key={ticket.id}>
+                    <TableCell className="font-mono text-xs">{ticket.id}</TableCell>
+                    <TableCell className="font-medium">{ticket.subject}</TableCell>
+                    <TableCell>{ticket.category}</TableCell>
+                    <TableCell>{ticket.raisedBy}</TableCell>
+                    <TableCell>{ticket.assignedTo}</TableCell>
+                    <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
+                    <TableCell><Badge variant="outline">{ticket.status}</Badge></TableCell>
+                    <TableCell className="text-xs font-mono">{ticket.sla}</TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { FileText, Download, TrendingUp, Users, Calendar, DollarSign, ShieldCheck, Play } from "lucide-react"
+import { FileText, TrendingUp, Users, Calendar, DollarSign, Play } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

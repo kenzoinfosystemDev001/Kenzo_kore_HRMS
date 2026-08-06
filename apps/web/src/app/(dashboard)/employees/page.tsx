@@ -2,14 +2,14 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { Users, Search, Plus, Filter, Download, Edit, Trash2, Eye, Mail, Phone, Building, CheckCircle2 } from "lucide-react"
+import { Users, Plus, Download, Edit, Trash2, Eye } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth"

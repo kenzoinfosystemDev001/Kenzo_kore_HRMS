@@ -27,13 +27,12 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  Sparkles,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { useAuth, ADMIN_ONLY_ROUTES, EMPLOYEE_ALLOWED_ROUTES } from "@/lib/auth"
+import { useAuth, EMPLOYEE_ALLOWED_ROUTES } from "@/lib/auth"
 
 const navGroups = [
   {

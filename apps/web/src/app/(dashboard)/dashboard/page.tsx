@@ -5,22 +5,13 @@ import { motion } from "framer-motion"
 import {
   Users,
   Clock,
-  CalendarDays,
-  FileCheck,
-  FolderKanban,
   TrendingUp,
   AlertTriangle,
   Sparkles,
-  ArrowUpRight,
-  ChevronRight,
   ShieldCheck,
   Zap,
   CheckCircle2,
   Calendar,
-  Building2,
-  Edit,
-  Trash2,
-  Plus
 } from "lucide-react"
 import {
   AreaChart,
@@ -38,7 +29,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth } from "@/lib/auth"
 
 import {

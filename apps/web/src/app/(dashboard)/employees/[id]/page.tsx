@@ -1,16 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
-import { ArrowLeft, Mail, Phone, MapPin, Briefcase, Calendar, UserCheck, Edit, CheckCircle2, DollarSign, Building } from "lucide-react"
+import { ArrowLeft, Edit } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

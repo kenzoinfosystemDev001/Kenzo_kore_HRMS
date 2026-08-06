@@ -1,10 +1,10 @@
 "use client"
 
 import React from "react"
-import { Boxes, Zap, CheckCircle2, Globe, Shield, ArrowUpRight } from "lucide-react"
+import { Zap } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
 const integrations = [

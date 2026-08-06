@@ -1,14 +1,23 @@
 "use client"
 
 import React from "react"
-import { GraduationCap, BookOpen, Award, CheckCircle2, PlayCircle, Users, Clock } from "lucide-react"
+import { BookOpen, Award, CheckCircle2, PlayCircle, Clock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
-const courses: any[] = []
+interface Course {
+  title: string
+  provider: string
+  duration: string
+  enrolled: number
+  category: string
+  rating: string
+}
+
+const courses: Course[] = []
 
 export default function TrainingPage() {
   return (
@@ -30,8 +39,8 @@ export default function TrainingPage() {
             <BookOpen className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground mt-1">2 mandatory compliance</p>
+            <div className="text-2xl font-bold">0 Active</div>
+            <p className="text-xs text-muted-foreground mt-1">0 compliance tracks</p>
           </CardContent>
         </Card>
         <Card>
@@ -51,7 +60,7 @@ export default function TrainingPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground mt-1">AWS & Security verified</p>
+            <p className="text-xs text-muted-foreground mt-1">Verified certificates</p>
           </CardContent>
         </Card>
         <Card>
@@ -61,19 +70,22 @@ export default function TrainingPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">N/A</div>
-            <p className="text-xs text-muted-foreground mt-1">SOC2 compliance requirement</p>
+            <p className="text-xs text-muted-foreground mt-1">SOC2 requirement</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {courses.length === 0 ? (
-          <div className="col-span-1 md:col-span-2 h-32 flex flex-col items-center justify-center text-muted-foreground border rounded-xl border-dashed">
-            <BookOpen className="h-8 w-8 mb-2 opacity-50" />
-            <p>No training courses assigned yet</p>
-          </div>
-        ) : (
-          courses.map((course, i) => (
+      {courses.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <BookOpen className="h-12 w-12 text-muted-foreground/30 mb-3" />
+            <p className="text-sm font-medium text-foreground">No training courses assigned yet</p>
+            <p className="text-xs text-muted-foreground mt-1">Click &quot;Add Course&quot; to create a new learning module.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          {courses.map((course, i) => (
             <Card key={i} className="flex flex-col justify-between hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -98,9 +110,9 @@ export default function TrainingPage() {
                 </Button>
               </CardFooter>
             </Card>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
