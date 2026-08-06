@@ -16,14 +16,11 @@ import {
 import {
   AreaChart,
   Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
+  Tooltip,
 } from "recharts"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -31,27 +28,49 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth } from "@/lib/auth"
+import { getStoredEmployees, EmployeeRecord } from "@/lib/employee-store"
+import { getStoredLeaves, updateLeaveStatus, LeaveRequestRecord } from "@/lib/leave-store"
 
 import {
-  statCards,
   attendanceData,
-  leaveRequests as initialLeaveRequests,
   departmentData,
 } from "@/features/dashboard/data"
 
 const COLORS = ["#3B82F6", "#6366F1", "#EC4899", "#8B5CF6", "#10B981", "#F59E0B", "#06B6D4"]
 
 export default function DashboardPage() {
-  const [leaveQueue, setLeaveQueue] = useState(initialLeaveRequests)
   const { user, isAdmin } = useAuth()
+  const [employees] = useState<EmployeeRecord[]>(() => getStoredEmployees())
+  const [leaves, setLeaves] = useState<LeaveRequestRecord[]>(() => getStoredLeaves())
 
-  const handleApprove = (id: number) => {
-    setLeaveQueue(leaveQueue.filter(r => r.id !== id))
+  const pendingLeaves = leaves.filter(l => l.status === "Pending")
+  const activeEmployees = employees.filter(e => e.status === "Active")
+
+  const handleApprove = (id: string) => {
+    const updated = updateLeaveStatus(id, "Approved")
+    setLeaves(updated)
   }
 
-  const handleReject = (id: number) => {
-    setLeaveQueue(leaveQueue.filter(r => r.id !== id))
+  const handleReject = (id: string) => {
+    const updated = updateLeaveStatus(id, "Rejected")
+    setLeaves(updated)
   }
+
+  const handleApproveAll = () => {
+    let updated = leaves
+    pendingLeaves.forEach(l => {
+      updated = updateLeaveStatus(l.id, "Approved")
+    })
+    setLeaves(updated)
+  }
+
+  const dynamicStatCards = [
+    { title: "TOTAL EMPLOYEES", value: `${employees.length}`, change: "Active workforce" },
+    { title: "PRESENT TODAY", value: `${activeEmployees.length}`, change: "100% attendance" },
+    { title: "ON LEAVE", value: `${employees.length - activeEmployees.length}`, change: "All present" },
+    { title: "PENDING REQUESTS", value: `${pendingLeaves.length}`, change: pendingLeaves.length > 0 ? "Requires review" : "No pending" },
+    { title: "PROJECTS ACTIVE", value: "1", change: "Kenzo HRMS" },
+  ]
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
@@ -77,9 +96,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 5 Stat Cards Row */}
+      {/* 5 Dynamic Stat Cards Row */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        {statCards.map((card, i) => (
+        {dynamicStatCards.map((card, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 15 }}
@@ -96,7 +115,7 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="text-2xl font-extrabold text-foreground">{card.value}</div>
                 <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" /> {card.change}
+                  <TrendingUp className="h-3 w-3" /> ~ {card.change}
                 </p>
               </CardContent>
             </Card>
@@ -124,9 +143,6 @@ export default function DashboardPage() {
                     <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="name" stroke="#64748B" fontSize={11} />
-                <YAxis stroke="#64748B" fontSize={11} />
                 <Tooltip contentStyle={{ borderRadius: "12px" }} />
                 <Area type="monotone" dataKey="present" stroke="#3B82F6" fillOpacity={1} fill="url(#colorPresent)" strokeWidth={2} />
               </AreaChart>
@@ -134,28 +150,31 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Leave Requests Queue with Admin Actions */}
+        {/* Persistent Leave Requests Queue with Admin Actions */}
         <Card className="col-span-12 lg:col-span-5 glass-card flex flex-col justify-between">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-lg font-bold text-foreground">Pending Approvals</CardTitle>
               <CardDescription className="text-muted-foreground text-xs">Admin review and leave approval queue.</CardDescription>
             </div>
-            <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">{leaveQueue.length} Pending</Badge>
+            <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">{pendingLeaves.length} Pending</Badge>
           </CardHeader>
           <CardContent className="space-y-3">
-            {leaveQueue.length === 0 ? (
-              <div className="text-center py-6 text-xs text-muted-foreground">All pending requests approved!</div>
+            {pendingLeaves.length === 0 ? (
+              <div className="text-center py-8 text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex flex-col items-center gap-2">
+                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                All pending approval requests processed!
+              </div>
             ) : (
-              leaveQueue.slice(0, 4).map((req) => (
+              pendingLeaves.slice(0, 4).map((req) => (
                 <div key={req.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9 border border-primary/20">
-                      <AvatarFallback className="bg-primary/20 text-primary font-bold text-xs">{req.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
+                      <AvatarFallback className="bg-primary/20 text-primary font-bold text-xs">{req.employeeName.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <h4 className="text-xs font-bold text-foreground">{req.name}</h4>
-                      <p className="text-[11px] text-muted-foreground">{req.type} • {req.duration}</p>
+                      <h4 className="text-xs font-bold text-foreground">{req.employeeName}</h4>
+                      <p className="text-[11px] text-muted-foreground">{req.leaveType} • {req.days} Day</p>
                     </div>
                   </div>
                   {isAdmin && (
@@ -172,9 +191,9 @@ export default function DashboardPage() {
               ))
             )}
           </CardContent>
-          {isAdmin && (
+          {isAdmin && pendingLeaves.length > 0 && (
             <CardFooter className="border-t pt-3">
-              <Button size="sm" className="w-full text-xs text-foreground" variant="outline" onClick={() => setLeaveQueue([])}>
+              <Button size="sm" className="w-full text-xs text-foreground" variant="outline" onClick={handleApproveAll}>
                 Approve All Pending Requests
               </Button>
             </CardFooter>
@@ -188,7 +207,7 @@ export default function DashboardPage() {
         <Card className="col-span-12 md:col-span-6 lg:col-span-4 glass-card">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-foreground">Department Headcount</CardTitle>
-            <CardDescription className="text-muted-foreground text-xs">Distribution across 2 employees.</CardDescription>
+            <CardDescription className="text-muted-foreground text-xs">Distribution across {employees.length} active employees.</CardDescription>
           </CardHeader>
           <CardContent className="h-[240px] flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
@@ -237,9 +256,9 @@ export default function DashboardPage() {
 
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 space-y-1">
               <div className="flex items-center gap-2 font-bold text-xs">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Payroll Readiness 99.8%
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Payroll Readiness 100%
               </div>
-              <p className="text-xs text-emerald-600 dark:text-emerald-200/80">2 employees synchronized for 1-click August disbursement.</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-200/80">Master payroll registry synchronized.</p>
             </div>
           </CardContent>
         </Card>
@@ -247,4 +266,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-

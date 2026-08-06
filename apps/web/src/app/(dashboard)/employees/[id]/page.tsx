@@ -13,17 +13,26 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useParams } from "next/navigation"
 import { useAuth } from "@/lib/auth"
 import { getStoredEmployees, updateStoredEmployee, EmployeeRecord } from "@/lib/employee-store"
 
 export default function EmployeeProfilePage() {
+  const params = useParams()
+  const routeId = (params?.id as string) || ""
   const { user, isAdmin } = useAuth()
-  const [emp, setEmp] = React.useState<EmployeeRecord | null>(() => {
-    const list = getStoredEmployees()
-    return list.find(e => e.email === user?.email) || list[1] || list[0]
-  })
+
+  const allEmployees = React.useMemo(() => getStoredEmployees(), [])
+  
+  const initialEmp = React.useMemo(() => {
+    if (!routeId) return allEmployees[0]
+    return allEmployees.find(e => e.id.toLowerCase() === routeId.toLowerCase() || e.email.toLowerCase() === routeId.toLowerCase()) || allEmployees[0]
+  }, [allEmployees, routeId])
+
   const [isEditOpen, setIsEditOpen] = React.useState(false)
-  const [formData, setFormData] = React.useState<Partial<EmployeeRecord>>(() => emp || {})
+  const [formData, setFormData] = React.useState<Partial<EmployeeRecord>>(initialEmp || {})
+
+  const emp = initialEmp
 
   if (!emp) return null
 
@@ -39,7 +48,6 @@ export default function EmployeeProfilePage() {
       ...formData,
     }
     updateStoredEmployee(updated)
-    setEmp(updated)
     setIsEditOpen(false)
   }
 
