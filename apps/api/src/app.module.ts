@@ -8,6 +8,8 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { LeaveModule } from './modules/leave/leave.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 
+import { AppController } from './app.controller';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -21,5 +23,6 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     LeaveModule,
     DashboardModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
