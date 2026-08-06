@@ -77,12 +77,8 @@ export const EMPLOYEE_ALLOWED_ROUTES = [
   "/dashboard",
   "/attendance",
   "/leave",
-  "/payroll",
-  "/expense",
   "/performance",
-  "/training",
-  "/assets",
-  "/helpdesk",
+  "/payroll",
 ]
 
 // ─── Provider ───────────────────────────────────────────────

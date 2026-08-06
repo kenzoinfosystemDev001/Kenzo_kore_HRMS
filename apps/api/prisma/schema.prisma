@@ -258,12 +258,6 @@ model User {
   employeeId      String?   @unique @map("employee_id") @db.Uuid
   isActive        Boolean   @default(true) @map("is_active")
   emailVerified   Boolean   @default(false) @map("email_verified")
-  mfaEnabled      Boolean   @default(false) @map("mfa_enabled")
-  mfaSecret       String?   @map("mfa_secret")
-  googleId        String?   @map("google_id") @db.VarChar(255)
-  microsoftId     String?   @map("microsoft_id") @db.VarChar(255)
-  lastLoginAt     DateTime? @map("last_login_at") @db.Timestamptz
-  lastLoginIp     String?   @map("last_login_ip") @db.VarChar(45)
   passwordChangedAt DateTime? @map("password_changed_at") @db.Timestamptz
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz

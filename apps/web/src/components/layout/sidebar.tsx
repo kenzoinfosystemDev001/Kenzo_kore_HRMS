@@ -33,7 +33,7 @@ import { useTheme } from "next-themes"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { useAuth, EMPLOYEE_ALLOWED_ROUTES } from "@/lib/auth"
+import { useAuth } from "@/lib/auth"
 
 const navGroups = [
   {
@@ -87,15 +87,20 @@ export function Sidebar() {
   const { theme, setTheme } = useTheme()
   const { user, isAdmin } = useAuth()
 
-  const filteredGroups = navGroups.map(group => {
-    return {
-      ...group,
-      items: group.items.filter(item => {
-        if (isAdmin) return true;
-        return EMPLOYEE_ALLOWED_ROUTES.includes(item.href);
-      })
-    }
-  }).filter(group => group.items.length > 0)
+  const employeeNavGroup = {
+    title: "EMPLOYEE PORTAL",
+    items: [
+      { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { title: "Mark Attendance", href: "/attendance", icon: Clock },
+      { title: "Leave Application", href: "/leave", icon: CalendarDays },
+      { title: "Appraisals & Requests", href: "/performance", icon: TrendingUp },
+      { title: "My Payslips", href: "/payroll", icon: Wallet },
+    ],
+  }
+
+  const filteredGroups = isAdmin
+    ? navGroups
+    : [employeeNavGroup]
 
   return (
     <motion.aside
