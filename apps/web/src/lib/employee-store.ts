@@ -12,6 +12,7 @@ export interface EmployeeRecord {
   dept: string
   status: string
   joinDate: string
+  avatarUrl?: string
   phone?: string
   address?: string
   permanentAddress?: string

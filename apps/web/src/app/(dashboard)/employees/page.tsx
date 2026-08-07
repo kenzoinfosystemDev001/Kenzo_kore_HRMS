@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -24,7 +24,7 @@ import {
 } from "@/lib/employee-store"
 
 export default function EmployeesPage() {
-  const { isAdmin } = useAuth()
+  const { user, isAdmin } = useAuth()
   const [employeesList, setEmployeesList] = useState<EmployeeRecord[]>(() => getStoredEmployees())
   const [searchTerm, setSearchTerm] = useState("")
   const [editingEmp, setEditingEmp] = useState<EmployeeRecord | null>(null)
@@ -232,6 +232,7 @@ export default function EmployeesPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9 border border-primary/20">
+                          <AvatarImage src={emp.avatarUrl || `https://api.dicebear.com/9.x/notionists/svg?seed=${emp.name}`} />
                           <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
                             {emp.name.split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
@@ -260,12 +261,12 @@ export default function EmployeesPage() {
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link href={`/employees/${emp.id}`}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10" title="View 360° Profile">
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
 
-                        {isAdmin && (
+                        {isAdmin ? (
                           <>
                             <Button 
                               variant="ghost" 
@@ -288,6 +289,21 @@ export default function EmployeesPage() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </>
+                        ) : (
+                          user?.email?.toLowerCase() === emp.email.toLowerCase() && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
+                              title="Edit My Profile"
+                              onClick={() => {
+                                setEditingEmp(emp)
+                                setOriginalEmpId(emp.id)
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )
                         )}
                       </div>
                     </TableCell>

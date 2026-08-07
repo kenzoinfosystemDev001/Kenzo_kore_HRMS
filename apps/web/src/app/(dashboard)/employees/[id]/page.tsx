@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ArrowLeft, Edit, ShieldCheck, Lock, Save } from "lucide-react"
+import { ArrowLeft, Edit, ShieldCheck, Lock, Save, Camera } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
@@ -84,6 +84,45 @@ export default function EmployeeProfilePage() {
                 <DialogDescription>Update employee records for {emp.name} ({emp.id}). Access authorized for HR Admin & Employee.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
+                {/* Profile Picture Upload Section */}
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                  <Label className="text-foreground font-bold flex items-center gap-2">
+                    <Camera className="h-4 w-4 text-blue-500" /> Profile Picture (Avatar)
+                  </Label>
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <Avatar className="h-16 w-16 border-2 border-primary/40 shadow-sm">
+                      <AvatarImage src={formData.avatarUrl || `https://api.dicebear.com/9.x/notionists/svg?seed=${formData.name || emp.name}`} />
+                      <AvatarFallback className="text-lg font-bold bg-primary text-primary-foreground">
+                        {(formData.name || emp.name)[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-2 w-full">
+                      <Input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            const reader = new FileReader()
+                            reader.onloadend = () => {
+                              setFormData(prev => ({ ...prev, avatarUrl: reader.result as string }))
+                            }
+                            reader.readAsDataURL(file)
+                          }
+                        }}
+                        className="text-xs bg-background cursor-pointer"
+                      />
+                      <Input 
+                        type="url" 
+                        value={formData.avatarUrl || ""} 
+                        onChange={e => setFormData({ ...formData, avatarUrl: e.target.value })} 
+                        placeholder="Or paste image URL (https://...)" 
+                        className="text-xs bg-background"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label>Full Name</Label>
@@ -214,14 +253,25 @@ export default function EmployeeProfilePage() {
       <div className="overflow-hidden rounded-2xl border bg-card glass-card">
         <div className="h-32 bg-gradient-to-r from-blue-600 via-indigo-600 to-amber-500"></div>
         <div className="px-6 pb-6 pt-0 relative sm:flex sm:items-end sm:space-x-5">
-          <div className="relative -mt-16 flex h-28 w-28 items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl">
+          <div className="relative -mt-16 flex h-28 w-28 items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl group overflow-hidden">
             <Avatar className="h-full w-full">
-              <AvatarImage src={`https://api.dicebear.com/9.x/notionists/svg?seed=${emp.name}`} />
+              <AvatarImage src={emp.avatarUrl || `https://api.dicebear.com/9.x/notionists/svg?seed=${emp.name}`} />
               <AvatarFallback className="text-2xl font-bold bg-primary text-primary-foreground">
                 {emp.name.split(" ")[0]?.[0]}
                 {emp.name.split(" ")[1]?.[0]}
               </AvatarFallback>
             </Avatar>
+
+            {canAccessConfidential && (
+              <button 
+                onClick={() => setIsEditOpen(true)} 
+                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-200"
+                title="Upload or Change Profile Picture"
+              >
+                <Camera className="h-6 w-6" />
+                <span className="text-[10px] font-bold mt-0.5">Upload</span>
+              </button>
+            )}
           </div>
           <div className="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-between">
             <div>
