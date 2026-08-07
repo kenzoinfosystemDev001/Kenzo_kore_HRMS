@@ -19,7 +19,7 @@ export interface AttendanceRecord {
   notes?: string
 }
 
-const STORAGE_KEY = "kenzo_hrms_attendance_map_v2"
+const STORAGE_KEY = "kenzo_hrms_attendance_map_v3"
 
 /**
  * Cutoff Logic:
@@ -69,41 +69,6 @@ export function calculateDuration(checkInStr: string, checkOutStr: string): stri
 function generateDefaultRecords(employees: EmployeeRecord[], targetDate: string): AttendanceRecord[] {
   return employees.map(emp => {
     const initials = emp.name.split(" ").map(n => n[0]).join("").toUpperCase()
-    
-    // Seed default realistic times for master accounts
-    if (emp.email.toLowerCase().includes("ankit.sethi")) {
-      return {
-        id: `ATT-${emp.id}-${targetDate}`,
-        employeeId: emp.id,
-        employeeName: emp.name,
-        employeeEmail: emp.email,
-        avatar: initials,
-        department: emp.dept,
-        date: targetDate,
-        checkIn: "09:00 AM",
-        checkOut: "06:30 PM",
-        totalHours: "9h 30m",
-        status: "Present",
-      }
-    }
-
-    if (emp.email.toLowerCase().includes("sujal.kumar")) {
-      return {
-        id: `ATT-${emp.id}-${targetDate}`,
-        employeeId: emp.id,
-        employeeName: emp.name,
-        employeeEmail: emp.email,
-        avatar: initials,
-        department: emp.dept,
-        date: targetDate,
-        checkIn: "09:15 AM",
-        checkOut: "06:45 PM",
-        totalHours: "9h 30m",
-        status: "Present",
-      }
-    }
-
-    // Default for newly created employees: Absent until they clock in
     return {
       id: `ATT-${emp.id}-${targetDate}`,
       employeeId: emp.id,
