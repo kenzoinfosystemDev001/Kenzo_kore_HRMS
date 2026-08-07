@@ -1,20 +1,20 @@
 "use client"
 
 import React, { useState } from "react"
-import { Clock, CheckCircle2, AlertCircle, XCircle, Download, UserCheck, Activity, ShieldAlert, Sparkles, FileText } from "lucide-react"
+import { Clock, CheckCircle2, AlertCircle, XCircle, Download, UserCheck, ShieldAlert, Sparkles, FileText, Calendar as CalendarIcon, Lock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth"
 import {
-  getStoredAttendance,
+  getStoredAttendanceByDate,
   clockInEmployee,
   clockOutEmployee,
   regularizeAttendance,
@@ -24,7 +24,15 @@ import {
 
 export default function AttendancePage() {
   const { user } = useAuth()
-  const [records, setRecords] = useState<AttendanceRecord[]>(() => getStoredAttendance())
+  
+  const todayStr = new Date().toISOString().split("T")[0]
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr)
+  
+  const isToday = selectedDate === todayStr
+
+  // Load records dynamically for the selected calendar date
+  const records: AttendanceRecord[] = getStoredAttendanceByDate(selectedDate)
+
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDept, setSelectedDept] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
@@ -35,12 +43,13 @@ export default function AttendancePage() {
   const [regCheckIn, setRegCheckIn] = useState("09:00 AM")
   const [regCheckOut, setRegCheckOut] = useState("06:00 PM")
   const [regReason, setRegReason] = useState("")
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // Find logged-in employee record
+  // Find logged-in employee record for selected date
   const myRecord = records.find(r => r.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
   const isMyClockedIn = !!(myRecord && myRecord.checkIn && !myRecord.checkOut)
 
-  // Recalculate stats dynamically
+  // Recalculate stats dynamically for selected date
   const countPresent = records.filter(r => r.status === "Present").length
   const countLate = records.filter(r => r.status === "Late").length
   const countHalfDay = records.filter(r => r.status === "Half Day").length
@@ -49,20 +58,31 @@ export default function AttendancePage() {
 
   const handleToggleClock = () => {
     if (!user?.email) return
-    if (isMyClockedIn) {
-      const updated = clockOutEmployee(user.email)
-      setRecords(updated)
-    } else {
-      const updated = clockInEmployee(user.email)
-      setRecords(updated)
+    
+    // Strict restriction: Only allow clocking in/out on the current day!
+    if (!isToday) {
+      setErrorMsg("Attendance can ONLY be marked on the current day. Switch calendar view to Today.")
+      return
+    }
+
+    try {
+      if (isMyClockedIn) {
+        clockOutEmployee(user.email, selectedDate)
+      } else {
+        clockInEmployee(user.email, selectedDate)
+      }
+      setErrorMsg(null)
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setErrorMsg(err.message)
+      }
     }
   }
 
   const handleRegularizeSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!regEmpEmail || !regCheckIn || !regCheckOut) return
-    const updated = regularizeAttendance(regEmpEmail, regCheckIn, regCheckOut, regReason || "Official Field Work")
-    setRecords(updated)
+    regularizeAttendance(regEmpEmail, regCheckIn, regCheckOut, regReason || "Official Field Work", selectedDate)
     setIsRegOpen(false)
     setRegReason("")
   }
@@ -108,23 +128,83 @@ export default function AttendancePage() {
           <h2 className="text-3xl font-extrabold tracking-tight text-foreground">
             Attendance <span className="hero-gradient-text">Management</span>
           </h2>
-          <p className="text-muted-foreground text-sm mt-1">Real-time attendance logs & automated cutoff rules (After 12:30 PM = Half Day)</p>
+          <p className="text-muted-foreground text-sm mt-1">Calendar date inspection & strict current-day clock-in enforcement</p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-border text-foreground hidden sm:flex">
-            <Download className="mr-2 h-4 w-4 text-blue-500" /> Export Monthly Report
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Calendar Date Selector */}
+          <div className="flex items-center gap-2 bg-card border rounded-xl p-1.5 shadow-sm">
+            <CalendarIcon className="h-4 w-4 text-primary ml-2" />
+            <Input 
+              type="date" 
+              value={selectedDate} 
+              onChange={e => {
+                setSelectedDate(e.target.value)
+                setErrorMsg(null)
+              }}
+              className="h-8 border-none bg-transparent text-xs font-bold text-foreground focus-visible:ring-0" 
+            />
+            <Button 
+              size="sm" 
+              variant={isToday ? "default" : "outline"} 
+              onClick={() => {
+                setSelectedDate(todayStr)
+                setErrorMsg(null)
+              }}
+              className="h-7 text-xs px-2.5 font-bold"
+            >
+              Today
+            </Button>
+          </div>
+
+          <Button variant="outline" className="border-border text-foreground hidden md:flex">
+            <Download className="mr-2 h-4 w-4 text-blue-500" /> Export Logs
           </Button>
 
-          {/* Clock In / Out Live Action */}
+          {/* Clock In / Out Live Action - Restricted strictly to Current Day */}
           <Button 
             onClick={handleToggleClock}
-            className={isMyClockedIn ? "bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md shadow-rose-600/20" : "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20"}
+            disabled={!isToday}
+            className={
+              !isToday 
+                ? "bg-muted text-muted-foreground cursor-not-allowed border opacity-80" 
+                : isMyClockedIn 
+                  ? "bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md shadow-rose-600/20" 
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20"
+            }
           >
-            <Clock className="mr-2 h-4 w-4 animate-spin-slow" /> 
-            {isMyClockedIn ? `Clock Out (${myRecord?.checkIn})` : "Clock In Now"}
+            {!isToday ? (
+              <>
+                <Lock className="mr-2 h-4 w-4 text-amber-500" /> Clock-In Restricted (Current Day Only)
+              </>
+            ) : (
+              <>
+                <Clock className="mr-2 h-4 w-4 animate-spin-slow" /> 
+                {isMyClockedIn ? `Clock Out (${myRecord?.checkIn})` : "Clock In Now"}
+              </>
+            )}
           </Button>
         </div>
+      </div>
+
+      {/* Date Status Banner & Warning */}
+      <div className="flex items-center justify-between bg-card border rounded-xl p-3.5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <Badge className={isToday ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 px-3 py-1 font-bold" : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 px-3 py-1 font-bold"}>
+            {isToday ? "🟢 Current Day (Live Marking Active)" : `🔒 Archive Date Selected: ${selectedDate} (Read-Only Archive)`}
+          </Badge>
+          {!isToday && (
+            <span className="text-xs text-muted-foreground font-medium hidden sm:inline">
+              Viewing historical attendance for {selectedDate}. Clock-in is disabled.
+            </span>
+          )}
+        </div>
+
+        {errorMsg && (
+          <div className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-lg">
+            <ShieldAlert className="h-4 w-4" /> {errorMsg}
+          </div>
+        )}
       </div>
 
       {/* KPI Stats Grid */}
@@ -169,7 +249,7 @@ export default function AttendancePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-rose-600 dark:text-rose-400">{countAbsent}</div>
-            <p className="text-[11px] text-muted-foreground mt-1">Not clocked in today</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Not clocked in for {selectedDate}</p>
           </CardContent>
         </Card>
 
@@ -180,7 +260,7 @@ export default function AttendancePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-foreground">{totalEmployees}</div>
-            <p className="text-[11px] text-muted-foreground mt-1">Active company workforce</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Active workforce on {selectedDate}</p>
           </CardContent>
         </Card>
       </div>
@@ -192,8 +272,8 @@ export default function AttendancePage() {
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <CardTitle className="text-lg font-bold text-foreground">Daily Attendance Roster</CardTitle>
-                <CardDescription className="text-muted-foreground text-xs">Real-time check-in logs for all {totalEmployees} active employees.</CardDescription>
+                <CardTitle className="text-lg font-bold text-foreground">Attendance Logs ({selectedDate})</CardTitle>
+                <CardDescription className="text-muted-foreground text-xs">Real-time check-in records for all {totalEmployees} active employees.</CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Input 
@@ -243,7 +323,7 @@ export default function AttendancePage() {
                 {filteredRecords.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No matching attendance records found.
+                      No matching attendance records found for {selectedDate}.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -252,6 +332,7 @@ export default function AttendancePage() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9 border border-primary/20">
+                            <AvatarImage src={`https://api.dicebear.com/9.x/notionists/svg?seed=${record.employeeName}`} />
                             <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
                               {record.avatar}
                             </AvatarFallback>
@@ -290,35 +371,62 @@ export default function AttendancePage() {
           </CardContent>
         </Card>
 
-        {/* Right 1 Column: Analytics & Regularization Panel */}
+        {/* Right 1 Column: Mini Calendar & Executive Analytics Panel */}
         <Card className="col-span-1 glass-card flex flex-col justify-between">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-              <Activity className="h-5 w-5 text-blue-500" /> Executive Analytics
+              <CalendarIcon className="h-5 w-5 text-blue-500" /> Date & Calendar Inspector
             </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">Workforce Compliance & Trends</CardDescription>
+            <CardDescription className="text-xs text-muted-foreground">Select date to inspect logs</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Interactive Calendar Quick Selector */}
+            <div className="rounded-xl border border-primary/20 bg-card p-3 shadow-sm space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-foreground">
+                <span className="flex items-center gap-1.5">
+                  <CalendarIcon className="h-4 w-4 text-primary" /> {new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </span>
+                {isToday ? (
+                  <Badge className="bg-emerald-500/10 text-emerald-600 text-[10px]">Today</Badge>
+                ) : (
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedDate(todayStr)} className="h-5 text-[10px] px-1.5 text-blue-500">Go to Today</Button>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-bold text-muted-foreground">Inspect Calendar Date:</Label>
+                <Input 
+                  type="date" 
+                  value={selectedDate} 
+                  onChange={e => {
+                    setSelectedDate(e.target.value)
+                    setErrorMsg(null)
+                  }}
+                  className="w-full text-xs font-mono font-bold bg-background text-foreground" 
+                />
+              </div>
+            </div>
+
             {/* Compliance Bar */}
             <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 text-center">
-              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Today&apos;s Attendance Rate</div>
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Attendance Rate ({selectedDate})</div>
               <div className="text-3xl font-black text-foreground mt-1">
                 {totalEmployees > 0 ? Math.round(((countPresent + countLate + countHalfDay) / totalEmployees) * 100) : 0}%
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">
-                {countPresent + countLate + countHalfDay} of {totalEmployees} employees active today
+                {countPresent + countLate + countHalfDay} of {totalEmployees} active on {selectedDate}
               </p>
             </div>
 
-            {/* Shift Rules Info Box */}
+            {/* Strict Policy Box */}
             <div className="space-y-2 text-xs">
               <h4 className="font-bold text-foreground flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-amber-500" /> Company Attendance Policy
+                <Sparkles className="h-4 w-4 text-amber-500" /> Attendance Policy & Rules
               </h4>
               <ul className="space-y-1.5 text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span><strong>&le; 10:30 AM</strong>: Marked Full Day Present</span>
+                  <span><strong>Current Day Only</strong>: Clock-in restricted to today</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-amber-500" />
@@ -330,7 +438,7 @@ export default function AttendancePage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-rose-500" />
-                  <span><strong>No Clock-In</strong>: Automatically Absent</span>
+                  <span><strong>Unmarked</strong>: Marked Absent</span>
                 </li>
               </ul>
             </div>
@@ -342,12 +450,12 @@ export default function AttendancePage() {
               <Dialog open={isRegOpen} onOpenChange={setIsRegOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-xs font-semibold">
-                    <FileText className="mr-2 h-4 w-4 text-blue-500" /> Regularize Attendance
+                    <FileText className="mr-2 h-4 w-4 text-blue-500" /> Regularize Attendance ({selectedDate})
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-md">
                   <DialogHeader>
-                    <DialogTitle className="text-foreground">Regularize Attendance Record</DialogTitle>
+                    <DialogTitle className="text-foreground">Regularize Attendance for {selectedDate}</DialogTitle>
                     <DialogDescription className="text-muted-foreground">Adjust or approve attendance for field work or missed clock-ins.</DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleRegularizeSubmit} className="space-y-4 pt-2">
@@ -381,7 +489,7 @@ export default function AttendancePage() {
                       <Input value={regReason} onChange={e => setRegReason(e.target.value)} placeholder="Official Client Visit / Field Duty" required />
                     </div>
 
-                    <Button type="submit" className="w-full font-bold">Approve Regularization</Button>
+                    <Button type="submit" className="w-full font-bold">Approve Regularization for {selectedDate}</Button>
                   </form>
                 </DialogContent>
               </Dialog>

@@ -19,7 +19,7 @@ export interface AttendanceRecord {
   notes?: string
 }
 
-const STORAGE_KEY = "kenzo_hrms_attendance_store"
+const STORAGE_KEY = "kenzo_hrms_attendance_map_v2"
 
 /**
  * Cutoff Logic:
@@ -66,20 +66,20 @@ export function calculateDuration(checkInStr: string, checkOutStr: string): stri
   }
 }
 
-function generateDefaultRecords(employees: EmployeeRecord[], todayStr: string): AttendanceRecord[] {
+function generateDefaultRecords(employees: EmployeeRecord[], targetDate: string): AttendanceRecord[] {
   return employees.map(emp => {
     const initials = emp.name.split(" ").map(n => n[0]).join("").toUpperCase()
     
     // Seed default realistic times for master accounts
     if (emp.email.toLowerCase().includes("ankit.sethi")) {
       return {
-        id: `ATT-${emp.id}`,
+        id: `ATT-${emp.id}-${targetDate}`,
         employeeId: emp.id,
         employeeName: emp.name,
         employeeEmail: emp.email,
         avatar: initials,
         department: emp.dept,
-        date: todayStr,
+        date: targetDate,
         checkIn: "09:00 AM",
         checkOut: "06:30 PM",
         totalHours: "9h 30m",
@@ -89,13 +89,13 @@ function generateDefaultRecords(employees: EmployeeRecord[], todayStr: string): 
 
     if (emp.email.toLowerCase().includes("sujal.kumar")) {
       return {
-        id: `ATT-${emp.id}`,
+        id: `ATT-${emp.id}-${targetDate}`,
         employeeId: emp.id,
         employeeName: emp.name,
         employeeEmail: emp.email,
         avatar: initials,
         department: emp.dept,
-        date: todayStr,
+        date: targetDate,
         checkIn: "09:15 AM",
         checkOut: "06:45 PM",
         totalHours: "9h 30m",
@@ -105,13 +105,13 @@ function generateDefaultRecords(employees: EmployeeRecord[], todayStr: string): 
 
     // Default for newly created employees: Absent until they clock in
     return {
-      id: `ATT-${emp.id}`,
+      id: `ATT-${emp.id}-${targetDate}`,
       employeeId: emp.id,
       employeeName: emp.name,
       employeeEmail: emp.email,
       avatar: initials,
       department: emp.dept,
-      date: todayStr,
+      date: targetDate,
       checkIn: null,
       checkOut: null,
       totalHours: null,
@@ -120,7 +120,7 @@ function generateDefaultRecords(employees: EmployeeRecord[], todayStr: string): 
   })
 }
 
-function syncEmployeesWithAttendance(stored: AttendanceRecord[], employees: EmployeeRecord[], todayStr: string): AttendanceRecord[] {
+function syncEmployeesWithAttendance(stored: AttendanceRecord[], employees: EmployeeRecord[], targetDate: string): AttendanceRecord[] {
   const existingMap = new Map(stored.map(r => [r.employeeEmail.toLowerCase(), r]))
 
   const synced: AttendanceRecord[] = employees.map(emp => {
@@ -133,16 +133,15 @@ function syncEmployeesWithAttendance(stored: AttendanceRecord[], employees: Empl
       }
     }
 
-    // New employee added by Admin that wasn't in attendance store yet
     const initials = emp.name.split(" ").map(n => n[0]).join("").toUpperCase()
     return {
-      id: `ATT-${emp.id}`,
+      id: `ATT-${emp.id}-${targetDate}`,
       employeeId: emp.id,
       employeeName: emp.name,
       employeeEmail: emp.email,
       avatar: initials,
       department: emp.dept,
-      date: todayStr,
+      date: targetDate,
       checkIn: null,
       checkOut: null,
       totalHours: null,
@@ -153,40 +152,61 @@ function syncEmployeesWithAttendance(stored: AttendanceRecord[], employees: Empl
   return synced
 }
 
-export function getStoredAttendance(): AttendanceRecord[] {
-  const todayStr = new Date().toISOString().split("T")[0]
-  const employees = getStoredEmployees()
-
-  if (typeof window === "undefined") return generateDefaultRecords(employees, todayStr)
-
+export function getAllAttendanceMap(): Record<string, AttendanceRecord[]> {
+  if (typeof window === "undefined") return {}
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as AttendanceRecord[]
-      const synced = syncEmployeesWithAttendance(parsed, employees, todayStr)
-      saveStoredAttendance(synced)
-      return synced
+      return JSON.parse(raw) as Record<string, AttendanceRecord[]>
     }
   } catch {
-    // Ignore fallback
+    // Ignore error
+  }
+  return {}
+}
+
+export function saveAllAttendanceMap(map: Record<string, AttendanceRecord[]>) {
+  if (typeof window === "undefined") return
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(map))
+  } catch {
+    // Ignore error
+  }
+}
+
+export function getStoredAttendanceByDate(dateStr?: string): AttendanceRecord[] {
+  const todayStr = new Date().toISOString().split("T")[0]
+  const targetDate = dateStr || todayStr
+  const employees = getStoredEmployees()
+  const map = getAllAttendanceMap()
+
+  if (map[targetDate]) {
+    const synced = syncEmployeesWithAttendance(map[targetDate], employees, targetDate)
+    map[targetDate] = synced
+    saveAllAttendanceMap(map)
+    return synced
   }
 
-  const initial = generateDefaultRecords(employees, todayStr)
-  saveStoredAttendance(initial)
+  const initial = generateDefaultRecords(employees, targetDate)
+  map[targetDate] = initial
+  saveAllAttendanceMap(map)
   return initial
 }
 
-export function saveStoredAttendance(records: AttendanceRecord[]) {
-  if (typeof window === "undefined") return
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records))
-  } catch {
-    // Ignore storage errors
-  }
+export function getStoredAttendance(): AttendanceRecord[] {
+  return getStoredAttendanceByDate()
 }
 
-export function clockInEmployee(email: string): AttendanceRecord[] {
-  const records = getStoredAttendance()
+export function clockInEmployee(email: string, dateStr?: string): AttendanceRecord[] {
+  const todayStr = new Date().toISOString().split("T")[0]
+  const targetDate = dateStr || todayStr
+
+  // Restrict marking attendance strictly to current day only!
+  if (targetDate !== todayStr) {
+    throw new Error("Attendance marking is restricted strictly to the current day.")
+  }
+
+  const records = getStoredAttendanceByDate(targetDate)
   const now = new Date()
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const status = calculateAttendanceStatus(now)
@@ -203,12 +223,22 @@ export function clockInEmployee(email: string): AttendanceRecord[] {
     return r
   })
 
-  saveStoredAttendance(updated)
+  const map = getAllAttendanceMap()
+  map[targetDate] = updated
+  saveAllAttendanceMap(map)
   return updated
 }
 
-export function clockOutEmployee(email: string): AttendanceRecord[] {
-  const records = getStoredAttendance()
+export function clockOutEmployee(email: string, dateStr?: string): AttendanceRecord[] {
+  const todayStr = new Date().toISOString().split("T")[0]
+  const targetDate = dateStr || todayStr
+
+  // Restrict marking attendance strictly to current day only!
+  if (targetDate !== todayStr) {
+    throw new Error("Attendance marking is restricted strictly to the current day.")
+  }
+
+  const records = getStoredAttendanceByDate(targetDate)
   const now = new Date()
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
@@ -227,12 +257,17 @@ export function clockOutEmployee(email: string): AttendanceRecord[] {
     return r
   })
 
-  saveStoredAttendance(updated)
+  const map = getAllAttendanceMap()
+  map[targetDate] = updated
+  saveAllAttendanceMap(map)
   return updated
 }
 
-export function regularizeAttendance(employeeEmail: string, checkIn: string, checkOut: string, reason: string): AttendanceRecord[] {
-  const records = getStoredAttendance()
+export function regularizeAttendance(employeeEmail: string, checkIn: string, checkOut: string, reason: string, dateStr?: string): AttendanceRecord[] {
+  const todayStr = new Date().toISOString().split("T")[0]
+  const targetDate = dateStr || todayStr
+  const records = getStoredAttendanceByDate(targetDate)
+
   const updated = records.map(r => {
     if (r.employeeEmail.toLowerCase() === employeeEmail.toLowerCase()) {
       const duration = calculateDuration(checkIn, checkOut)
@@ -248,6 +283,8 @@ export function regularizeAttendance(employeeEmail: string, checkIn: string, che
     return r
   })
 
-  saveStoredAttendance(updated)
+  const map = getAllAttendanceMap()
+  map[targetDate] = updated
+  saveAllAttendanceMap(map)
   return updated
 }
