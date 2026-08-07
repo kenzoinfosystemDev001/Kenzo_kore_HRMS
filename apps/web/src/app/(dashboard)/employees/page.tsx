@@ -28,13 +28,16 @@ export default function EmployeesPage() {
   const [employeesList, setEmployeesList] = useState<EmployeeRecord[]>(() => getStoredEmployees())
   const [searchTerm, setSearchTerm] = useState("")
   const [editingEmp, setEditingEmp] = useState<EmployeeRecord | null>(null)
+  const [originalEmpId, setOriginalEmpId] = useState<string | null>(null)
 
   // New Employee Form State
+  const [newEmpId, setNewEmpId] = useState("")
   const [newName, setNewName] = useState("")
   const [newEmail, setNewEmail] = useState("")
   const [newPassword, setNewPassword] = useState("kenzo123")
   const [newRole, setNewRole] = useState("")
   const [newDept, setNewDept] = useState("Engineering")
+  const [newJoinDate, setNewJoinDate] = useState("")
   const [newSystemRole, setNewSystemRole] = useState<SystemAccessRole>("Employee")
   const [isAddOpen, setIsAddOpen] = useState(false)
 
@@ -46,8 +49,15 @@ export default function EmployeesPage() {
   const handleAddEmployee = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newName || !newEmail) return
+
+    const formattedJoinDate = newJoinDate
+      ? new Date(newJoinDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+      : new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+
+    const assignedId = newEmpId.trim() ? newEmpId.trim() : `EMP-${Math.floor(1000 + Math.random() * 9000)}`
+
     const newEmp: EmployeeRecord = {
-      id: `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: assignedId,
       name: newName,
       email: newEmail,
       password: newPassword || "kenzo123",
@@ -55,23 +65,26 @@ export default function EmployeesPage() {
       systemRole: newSystemRole,
       dept: newDept,
       status: "Active",
-      joinDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+      joinDate: formattedJoinDate,
     }
     const updated = addStoredEmployee(newEmp)
     setEmployeesList(updated)
+    setNewEmpId("")
     setNewName("")
     setNewEmail("")
     setNewPassword("kenzo123")
     setNewRole("")
+    setNewJoinDate("")
     setNewSystemRole("Employee")
     setIsAddOpen(false)
   }
 
   const handleSaveEdit = () => {
     if (!editingEmp) return
-    const updated = updateStoredEmployee(editingEmp)
+    const updated = updateStoredEmployee(editingEmp, originalEmpId || undefined)
     setEmployeesList(updated)
     setEditingEmp(null)
+    setOriginalEmpId(null)
   }
 
   const filteredList = employeesList.filter(e => 
@@ -114,6 +127,17 @@ export default function EmployeesPage() {
                   <DialogDescription className="text-muted-foreground">Configure profile details and assign System Access Role (Employee, Super_admin, Admin, HR).</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleAddEmployee} className="space-y-4 pt-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-foreground font-bold">Employee ID (EMP ID)</Label>
+                      <Input value={newEmpId} onChange={e => setNewEmpId(e.target.value)} placeholder="e.g. EMP-1003 (Optional)" className="text-foreground font-mono font-semibold" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-foreground">Joining Date</Label>
+                      <Input type="date" value={newJoinDate} onChange={e => setNewJoinDate(e.target.value)} className="text-foreground" />
+                    </div>
+                  </div>
+
                   <div className="space-y-1">
                     <Label className="text-foreground">Full Name</Label>
                     <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="" required className="text-foreground" />
@@ -247,7 +271,10 @@ export default function EmployeesPage() {
                               variant="ghost" 
                               size="icon" 
                               className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
-                              onClick={() => setEditingEmp(emp)}
+                              onClick={() => {
+                                setEditingEmp(emp)
+                                setOriginalEmpId(emp.id)
+                              }}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -283,6 +310,17 @@ export default function EmployeesPage() {
               <DialogDescription className="text-muted-foreground">Update details and access role for {editingEmp.name} ({editingEmp.id}).</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-foreground font-bold">Employee ID (EMP ID)</Label>
+                  <Input className="text-foreground font-mono font-bold" value={editingEmp.id} onChange={e => setEditingEmp({ ...editingEmp, id: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-foreground font-bold">Joining Date</Label>
+                  <Input className="text-foreground" value={editingEmp.joinDate} onChange={e => setEditingEmp({ ...editingEmp, joinDate: e.target.value })} placeholder="e.g. Jan 15, 2024" />
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <Label className="text-foreground">Full Name</Label>
                 <Input className="text-foreground" value={editingEmp.name} onChange={e => setEditingEmp({ ...editingEmp, name: e.target.value })} />

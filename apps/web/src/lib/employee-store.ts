@@ -120,9 +120,14 @@ export function addStoredEmployee(emp: EmployeeRecord) {
   return updated
 }
 
-export function updateStoredEmployee(emp: EmployeeRecord) {
+export function updateStoredEmployee(emp: EmployeeRecord, oldId?: string) {
   const current = getStoredEmployees()
-  const updated = current.map(e => (e.id === emp.id ? { ...e, ...emp } : e))
+  const updated = current.map(e => {
+    if ((oldId && e.id === oldId) || e.id === emp.id || e.email.toLowerCase() === emp.email.toLowerCase()) {
+      return { ...e, ...emp }
+    }
+    return e
+  })
   saveStoredEmployees(updated)
   return updated
 }

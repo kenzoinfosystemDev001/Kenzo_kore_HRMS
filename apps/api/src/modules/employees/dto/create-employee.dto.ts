@@ -10,6 +10,7 @@ export class CreateEmployeeDto {
   @ApiPropertyOptional() @IsOptional() @IsString() departmentId?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() designationId?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() branchId?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() employeeCode?: string;
   @ApiPropertyOptional() @IsOptional() @IsDateString() dateOfJoining?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() employmentType?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() systemRole?: string;

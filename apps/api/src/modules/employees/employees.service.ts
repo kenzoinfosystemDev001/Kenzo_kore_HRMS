@@ -9,7 +9,7 @@ export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, createEmployeeDto: CreateEmployeeDto) {
-    const { firstName, lastName, email, password, phone, departmentId, designationId, branchId, dateOfJoining, employmentType, systemRole } = createEmployeeDto;
+    const { firstName, lastName, email, password, phone, departmentId, designationId, branchId, employeeCode, dateOfJoining, employmentType, systemRole } = createEmployeeDto;
 
     const pwd = password || 'Emp@123';
     const passwordHash = await bcrypt.hash(pwd, 10);
@@ -21,7 +21,7 @@ export class EmployeesService {
       data: {
         tenantId,
         organizationId: orgId,
-        employeeCode: `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
+        employeeCode: employeeCode || `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
         firstName,
         lastName,
         workEmail: email,

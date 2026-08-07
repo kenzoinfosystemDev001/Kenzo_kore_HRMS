@@ -47,7 +47,7 @@ export default function EmployeeProfilePage() {
       ...emp,
       ...formData,
     }
-    updateStoredEmployee(updated)
+    updateStoredEmployee(updated, emp.id)
     setIsEditOpen(false)
   }
 
@@ -90,8 +90,23 @@ export default function EmployeeProfilePage() {
                     <Input value={formData.name || ""} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
                   </div>
                   <div className="space-y-1">
-                    <Label>EMP_ID</Label>
-                    <Input value={formData.id || ""} disabled className="bg-muted" />
+                    <Label>EMP_ID (Employee Code)</Label>
+                    <Input 
+                      value={formData.id || ""} 
+                      onChange={e => setFormData({ ...formData, id: e.target.value })} 
+                      disabled={!isAdmin} 
+                      className={!isAdmin ? "bg-muted" : "font-mono font-bold text-primary"} 
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Joining Date</Label>
+                    <Input 
+                      value={formData.joinDate || ""} 
+                      onChange={e => setFormData({ ...formData, joinDate: e.target.value })} 
+                      disabled={!isAdmin} 
+                      placeholder="e.g. Jan 15, 2024" 
+                    />
                   </div>
 
                   <div className="space-y-1">
