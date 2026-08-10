@@ -66,3 +66,10 @@ export function addLeaveRequest(req: LeaveRequestRecord) {
   saveStoredLeaves(updated)
   return updated
 }
+
+export function deleteLeaveRequest(id: string) {
+  const current = getStoredLeaves()
+  const updated = current.filter(l => l.id !== id)
+  saveStoredLeaves(updated)
+  return updated
+}

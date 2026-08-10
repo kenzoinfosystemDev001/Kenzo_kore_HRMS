@@ -23,7 +23,7 @@ import {
 } from "@/lib/attendance-store"
 
 export default function AttendancePage() {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   
   const todayStr = new Date().toISOString().split("T")[0]
   const [selectedDate, setSelectedDate] = useState<string>(todayStr)
@@ -32,6 +32,11 @@ export default function AttendancePage() {
 
   // Load records dynamically for the selected calendar date
   const records: AttendanceRecord[] = getStoredAttendanceByDate(selectedDate)
+
+  // Attendance Isolation: Admins view company-wide roster, regular employees view ONLY their own attendance log
+  const visibleRecords = isAdmin
+    ? records
+    : records.filter(r => r.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
 
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDept, setSelectedDept] = useState("all")
@@ -49,12 +54,12 @@ export default function AttendancePage() {
   const myRecord = records.find(r => r.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
   const isMyClockedIn = !!(myRecord && myRecord.checkIn && !myRecord.checkOut)
 
-  // Recalculate stats dynamically for selected date
-  const countPresent = records.filter(r => r.status === "Present").length
-  const countLate = records.filter(r => r.status === "Late").length
-  const countHalfDay = records.filter(r => r.status === "Half Day").length
-  const countAbsent = records.filter(r => r.status === "Absent").length
-  const totalEmployees = records.length
+  // Recalculate stats dynamically for visible records
+  const countPresent = visibleRecords.filter(r => r.status === "Present").length
+  const countLate = visibleRecords.filter(r => r.status === "Late").length
+  const countHalfDay = visibleRecords.filter(r => r.status === "Half Day").length
+  const countAbsent = visibleRecords.filter(r => r.status === "Absent").length
+  const totalEmployees = visibleRecords.length
 
   const handleToggleClock = () => {
     if (!user?.email) return
@@ -87,8 +92,8 @@ export default function AttendancePage() {
     setRegReason("")
   }
 
-  // Filtered List
-  const filteredRecords = records.filter(r => {
+  // Filtered List over visible isolated records
+  const filteredRecords = visibleRecords.filter(r => {
     const matchesSearch = 
       r.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.employeeEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||

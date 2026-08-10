@@ -17,6 +17,7 @@ import {
   CalendarDays,
   Award,
   ArrowRight,
+  Trash2,
 } from "lucide-react"
 import {
   AreaChart,
@@ -39,7 +40,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { useAuth } from "@/lib/auth"
 import { getStoredEmployees, EmployeeRecord } from "@/lib/employee-store"
-import { getStoredLeaves, updateLeaveStatus, addLeaveRequest, LeaveRequestRecord } from "@/lib/leave-store"
+import { getStoredLeaves, updateLeaveStatus, addLeaveRequest, deleteLeaveRequest, LeaveRequestRecord } from "@/lib/leave-store"
 import { getStoredPayslips, PayslipRecord } from "@/lib/payslip-store"
 
 import {
@@ -93,6 +94,11 @@ export default function DashboardPage() {
 
   const handleReject = (id: string) => {
     const updated = updateLeaveStatus(id, "Rejected")
+    setLeaves(updated)
+  }
+
+  const handleDeleteLeave = (id: string) => {
+    const updated = deleteLeaveRequest(id)
     setLeaves(updated)
   }
 
@@ -501,6 +507,9 @@ export default function DashboardPage() {
                       </Button>
                       <Button size="sm" variant="outline" className="h-7 text-[11px] text-rose-600 border-rose-200 dark:border-rose-800 hover:bg-rose-50 px-2" onClick={() => handleReject(req.id)}>
                         Reject
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-rose-600 hover:bg-rose-500/10" title="Delete Leave Request" onClick={() => handleDeleteLeave(req.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   )}

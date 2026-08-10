@@ -124,6 +124,13 @@ export function updateAppraisalStatus(id: string, status: "Approved" | "Rejected
   return updated
 }
 
+export function deleteAppraisalRequest(id: string) {
+  const current = getStoredAppraisals()
+  const updated = current.filter(a => a.id !== id)
+  saveStoredAppraisals(updated)
+  return updated
+}
+
 export function getStoredOKRs(): OKRRecord[] {
   if (typeof window === "undefined") return DEFAULT_OKRS
   try {

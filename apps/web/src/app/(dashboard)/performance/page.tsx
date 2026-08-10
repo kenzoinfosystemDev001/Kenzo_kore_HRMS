@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { TrendingUp, Target, Star, Plus, Sparkles, Award, Check, X } from "lucide-react"
+import { TrendingUp, Target, Star, Plus, Sparkles, Award, Check, X, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,6 +18,7 @@ import {
   getStoredAppraisals,
   addAppraisalRequest,
   updateAppraisalStatus,
+  deleteAppraisalRequest,
   getStoredOKRs,
   addOKR,
   AppraisalRequestRecord,
@@ -96,6 +97,11 @@ export default function PerformancePage() {
 
   const handleRejectAppraisal = (id: string) => {
     const updated = updateAppraisalStatus(id, "Rejected", "Cycle feedback recorded.")
+    setAppraisals(updated)
+  }
+
+  const handleDeleteAppraisal = (id: string) => {
+    const updated = deleteAppraisalRequest(id)
     setAppraisals(updated)
   }
 
@@ -340,18 +346,21 @@ export default function PerformancePage() {
                         </TableCell>
                         {isAdmin && (
                           <TableCell className="text-right">
-                            {app.status === "Pending" ? (
-                              <div className="flex items-center justify-end gap-1">
-                                <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleApproveAppraisal(app.id)}>
-                                  <Check className="mr-1 h-3.5 w-3.5" /> Approve
-                                </Button>
-                                <Button size="sm" variant="outline" className="h-7 text-xs text-rose-600 border-rose-200 dark:border-rose-800" onClick={() => handleRejectAppraisal(app.id)}>
-                                  <X className="mr-1 h-3.5 w-3.5" /> Reject
-                                </Button>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-muted-foreground font-semibold">Processed</span>
-                            )}
+                            <div className="flex items-center justify-end gap-1">
+                              {app.status === "Pending" && (
+                                <>
+                                  <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleApproveAppraisal(app.id)}>
+                                    <Check className="mr-1 h-3.5 w-3.5" /> Approve
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="h-7 text-xs text-rose-600 border-rose-200 dark:border-rose-800" onClick={() => handleRejectAppraisal(app.id)}>
+                                    <X className="mr-1 h-3.5 w-3.5" /> Reject
+                                  </Button>
+                                </>
+                              )}
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-rose-600 hover:bg-rose-500/10" title="Delete Appraisal Request" onClick={() => handleDeleteAppraisal(app.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         )}
                       </TableRow>

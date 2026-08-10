@@ -74,3 +74,10 @@ export function updateExpenseStatus(id: string, status: "Approved" | "Rejected",
   saveStoredExpenses(updated)
   return updated
 }
+
+export function deleteExpenseClaim(id: string) {
+  const current = getStoredExpenses()
+  const updated = current.filter(e => e.id !== id)
+  saveStoredExpenses(updated)
+  return updated
+}

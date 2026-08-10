@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Receipt, DollarSign, Clock, CheckCircle2, Plus, Check, X } from "lucide-react"
+import { Receipt, DollarSign, Clock, CheckCircle2, Plus, Check, X, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +16,7 @@ import {
   getStoredExpenses,
   addExpenseClaim,
   updateExpenseStatus,
+  deleteExpenseClaim,
   ExpenseClaimRecord,
 } from "@/lib/expense-store"
 
@@ -66,6 +67,11 @@ export default function ExpensePage() {
 
   const handleReject = (id: string) => {
     const updated = updateExpenseStatus(id, "Rejected", "Receipt details required.")
+    setExpenses(updated)
+  }
+
+  const handleDeleteExpense = (id: string) => {
+    const updated = deleteExpenseClaim(id)
     setExpenses(updated)
   }
 
@@ -272,18 +278,21 @@ export default function ExpensePage() {
                     <TableCell>{getStatusBadge(claim.status)}</TableCell>
                     {isAdmin && (
                       <TableCell className="text-right">
-                        {claim.status === "Pending" ? (
-                          <div className="flex items-center justify-end gap-1">
-                            <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleApprove(claim.id)}>
-                              <Check className="mr-1 h-3.5 w-3.5" /> Approve
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-7 text-xs text-rose-600 border-rose-200 dark:border-rose-800" onClick={() => handleReject(claim.id)}>
-                              <X className="mr-1 h-3.5 w-3.5" /> Reject
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground font-semibold">Processed</span>
-                        )}
+                        <div className="flex items-center justify-end gap-1">
+                          {claim.status === "Pending" && (
+                            <>
+                              <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleApprove(claim.id)}>
+                                <Check className="mr-1 h-3.5 w-3.5" /> Approve
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 text-xs text-rose-600 border-rose-200 dark:border-rose-800" onClick={() => handleReject(claim.id)}>
+                                <X className="mr-1 h-3.5 w-3.5" /> Reject
+                              </Button>
+                            </>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-rose-600 hover:bg-rose-500/10" title="Delete Expense Claim" onClick={() => handleDeleteExpense(claim.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
