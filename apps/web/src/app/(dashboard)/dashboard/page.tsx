@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react"
 import { motion } from "framer-motion"
 import {
   Users,
@@ -44,7 +44,6 @@ import { getStoredPayslips, PayslipRecord } from "@/lib/payslip-store"
 
 import {
   attendanceData,
-  departmentData,
 } from "@/features/dashboard/data"
 
 const COLORS = ["#3B82F6", "#6366F1", "#EC4899", "#8B5CF6", "#10B981", "#F59E0B", "#06B6D4"]
@@ -54,6 +53,16 @@ export default function DashboardPage() {
   const [employees] = useState<EmployeeRecord[]>(() => getStoredEmployees())
   const [leaves, setLeaves] = useState<LeaveRequestRecord[]>(() => getStoredLeaves())
   const [payslips] = useState<PayslipRecord[]>(() => getStoredPayslips())
+
+  // Calculate dynamic department headcount from live stored employees
+  const dynamicDepartmentData = useMemo(() => {
+    const counts: Record<string, number> = {}
+    employees.forEach(emp => {
+      const d = emp.dept || "General"
+      counts[d] = (counts[d] || 0) + 1
+    })
+    return Object.entries(counts).map(([name, value]) => ({ name, value }))
+  }, [employees])
 
   // Employee Attendance Clock In/Out State
   const [isCheckedIn, setIsCheckedIn] = useState(false)
@@ -520,8 +529,8 @@ export default function DashboardPage() {
           <CardContent className="h-[240px] flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={departmentData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4}>
-                  {departmentData.map((entry, index) => (
+                <Pie data={dynamicDepartmentData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4}>
+                  {dynamicDepartmentData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

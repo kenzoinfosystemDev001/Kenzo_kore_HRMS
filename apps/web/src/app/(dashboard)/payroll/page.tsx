@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Eye, Wallet, Plus, Printer, Building2, CheckCircle2, FileText } from "lucide-react"
+import { Eye, Wallet, Plus, Printer, Building2, FileText, Sparkles, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/lib/auth"
 import { getStoredEmployees, EmployeeRecord } from "@/lib/employee-store"
 import { getStoredPayslips, addStoredPayslip, PayslipRecord } from "@/lib/payslip-store"
+import { addTargetNotification, getNotificationsForUser, markNotificationAsRead } from "@/lib/notification-store"
 
 export default function PayrollPage() {
   const { user, isAdmin } = useAuth()
@@ -23,41 +24,60 @@ export default function PayrollPage() {
   const [payslips, setPayslips] = useState<PayslipRecord[]>(() => getStoredPayslips())
   const [selectedPayslip, setSelectedPayslip] = useState<PayslipRecord | null>(null)
   const [isGenerateOpen, setIsGenerateOpen] = useState(false)
+  const [dismissedPopupId, setDismissedPopupId] = useState<string | null>(null)
 
-  // Generate Payslip Form State
+  // Derived state for unread isolated payslip notification
+  const employeePopupNotif = user?.email
+    ? getNotificationsForUser(user.email).find(n => !n.isRead && n.type === "PAYSLIP" && n.id !== dismissedPopupId) || null
+    : null
+
+  // Custom Salary Components Form State for Admin
   const [targetEmpEmail, setTargetEmpEmail] = useState("")
   const [payMonth, setPayMonth] = useState("August 2026")
-  const [grossInput, setGrossInput] = useState("237500")
-  const [deductionsInput, setDeductionsInput] = useState("22500")
+  const [basicInput, setBasicInput] = useState("6000")
+  const [hraInput, setHraInput] = useState("3000")
+  const [specialInput, setSpecialInput] = useState("3000")
+  const [pfInput, setPfInput] = useState("0")
+  const [tdsInput, setTdsInput] = useState("0")
 
-  // Filtered lists
-  const myPayslips = payslips.filter(p => p.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
-  const latestNet = myPayslips[0]?.net || "₹0"
+  const handleOpenPopupPayslip = () => {
+    if (!employeePopupNotif) return
+    markNotificationAsRead(employeePopupNotif.id)
+    
+    // Find payslip or fallback to employee's latest
+    const match = payslips.find(p => p.id === employeePopupNotif.payslipId) ||
+      payslips.find(p => p.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
+    
+    if (match) {
+      setSelectedPayslip(match)
+    }
+    setDismissedPopupId(employeePopupNotif.id)
+  }
+
+  // Calculate live dynamic gross & net for Admin input preview
+  const basicNum = parseFloat(basicInput) || 0
+  const hraNum = parseFloat(hraInput) || 0
+  const specialNum = parseFloat(specialInput) || 0
+  const pfNum = parseFloat(pfInput) || 0
+  const tdsNum = parseFloat(tdsInput) || 0
+
+  const calculatedGross = basicNum + hraNum + specialNum
+  const calculatedDeductions = pfNum + tdsNum
+  const calculatedNet = Math.max(0, calculatedGross - calculatedDeductions)
 
   const handleGeneratePayslip = (e: React.FormEvent) => {
     e.preventDefault()
     const emp = employees.find(e => e.email === targetEmpEmail) || employees[0]
     if (!emp) return
 
-    const grossNum = parseFloat(grossInput) || 0
-    const dedNum = parseFloat(deductionsInput) || 0
-    const netNum = Math.max(0, grossNum - dedNum)
-
-    const basicNum = Math.round(grossNum * 0.5)
-    const hraNum = Math.round(grossNum * 0.25)
-    const specialNum = grossNum - basicNum - hraNum
-
-    const pfNum = Math.round(dedNum * 0.35)
-    const tdsNum = dedNum - pfNum
-
     const newSlip: PayslipRecord = {
       id: `PAY-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
       employeeName: emp.name,
       employeeEmail: emp.email,
       month: payMonth,
-      gross: `₹${grossNum.toLocaleString("en-IN")}`,
-      deductions: `₹${dedNum.toLocaleString("en-IN")}`,
-      net: `₹${netNum.toLocaleString("en-IN")}`,
+      gross: `₹${calculatedGross.toLocaleString("en-IN")}`,
+      deductions: `₹${calculatedDeductions.toLocaleString("en-IN")}`,
+      net: `₹${calculatedNet.toLocaleString("en-IN")}`,
       status: "Paid",
       date: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
       basicPay: `₹${basicNum.toLocaleString("en-IN")}`,
@@ -69,6 +89,19 @@ export default function PayrollPage() {
 
     const updated = addStoredPayslip(newSlip)
     setPayslips(updated)
+
+    // Publish isolated target notification exclusively to target employee
+    addTargetNotification({
+      id: `NOTIF-${Date.now()}`,
+      targetEmail: emp.email.toLowerCase(),
+      title: "🎉 New Salary Slip Issued!",
+      message: `Your official salary slip for ${payMonth} has been issued. Total Net Payable: ₹${calculatedNet.toLocaleString("en-IN")}.`,
+      type: "PAYSLIP",
+      payslipId: newSlip.id,
+      date: new Date().toLocaleDateString(),
+      isRead: false,
+    })
+
     setIsGenerateOpen(false)
   }
 
@@ -76,31 +109,64 @@ export default function PayrollPage() {
     window.print()
   }
 
+  // Filtered lists for isolation
+  const myPayslips = payslips.filter(p => p.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
+  const latestNet = myPayslips[0]?.net || "₹0"
+
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+      {/* Isolated Pop-Up Notification Toast Banner for Particular Employee */}
+      {employeePopupNotif && (
+        <div className="rounded-2xl border-2 border-emerald-500/50 bg-gradient-to-r from-emerald-950/80 via-background to-blue-950/80 p-5 shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-4 duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+              <Sparkles className="h-5 w-5 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-sm font-extrabold text-foreground flex items-center gap-2">
+                {employeePopupNotif.title}
+                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">Isolated Security Notice</Badge>
+              </h4>
+              <p className="text-xs text-muted-foreground mt-0.5">{employeePopupNotif.message}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={handleOpenPopupPayslip} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md">
+              <Eye className="mr-1.5 h-3.5 w-3.5" /> View Confidential Payslip
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setDismissedPopupId(employeePopupNotif.id)} className="h-8 w-8 p-0 text-muted-foreground">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5 border-border">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2">
-            <Wallet className="h-3.5 w-3.5" /> Corporate Payroll Engine
+            <Wallet className="h-3.5 w-3.5" /> Corporate Payroll Engine & Salary Slips
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight text-foreground">
             Payroll & <span className="hero-gradient-text">Payslips</span>
           </h2>
-          <p className="text-muted-foreground text-sm mt-1">Manage salary statements, issue monthly payslips, and export PDF records.</p>
+          <p className="text-muted-foreground text-sm mt-1">Manage salary statements, issue custom monthly payslips, and export PDF documents.</p>
         </div>
 
         {/* Admin Payslip Generation CTA */}
         {isAdmin && (
           <Dialog open={isGenerateOpen} onOpenChange={setIsGenerateOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-md shadow-primary/20">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md shadow-primary/20">
                 <Plus className="mr-2 h-4 w-4" /> Issue New Payslip
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Issue Employee Payslip</DialogTitle>
-                <DialogDescription>Generate and publish monthly salary slip for real-time employee view.</DialogDescription>
+                <DialogTitle className="flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-blue-500" /> Issue Employee Payslip
+                </DialogTitle>
+                <DialogDescription>Define custom salary earnings (Basic, HRA, Special) and notify the target employee.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleGeneratePayslip} className="space-y-4 pt-2">
                 <div className="space-y-1">
@@ -122,111 +188,138 @@ export default function PayrollPage() {
                   <Input value={payMonth} onChange={e => setPayMonth(e.target.value)} placeholder="August 2026" required />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label>Gross Pay (₹)</Label>
-                    <Input type="number" value={grossInput} onChange={e => setGrossInput(e.target.value)} required />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Total Deductions (₹)</Label>
-                    <Input type="number" value={deductionsInput} onChange={e => setDeductionsInput(e.target.value)} required />
+                {/* Custom Salary Earnings Inputs for Admin */}
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Custom Earnings Components (₹)</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Basic Salary</Label>
+                      <Input type="number" value={basicInput} onChange={e => setBasicInput(e.target.value)} placeholder="6000" required />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">HRA</Label>
+                      <Input type="number" value={hraInput} onChange={e => setHraInput(e.target.value)} placeholder="3000" required />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Special Allowance</Label>
+                      <Input type="number" value={specialInput} onChange={e => setSpecialInput(e.target.value)} placeholder="3000" required />
+                    </div>
                   </div>
                 </div>
 
-                <div className="p-3 bg-muted/40 rounded-xl border text-xs space-y-1">
-                  <div className="flex justify-between font-medium">
-                    <span>Calculated Net Pay:</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      ₹{Math.max(0, (parseFloat(grossInput) || 0) - (parseFloat(deductionsInput) || 0)).toLocaleString("en-IN")}
-                    </span>
+                {/* Custom Deductions Inputs for Admin */}
+                <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 space-y-3">
+                  <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Custom Deduction Components (₹)</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">PF Deduction</Label>
+                      <Input type="number" value={pfInput} onChange={e => setPfInput(e.target.value)} placeholder="0" required />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Income Tax (TDS)</Label>
+                      <Input type="number" value={tdsInput} onChange={e => setTdsInput(e.target.value)} placeholder="0" required />
+                    </div>
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full bg-primary text-primary-foreground font-semibold">
-                  <CheckCircle2 className="mr-2 h-4 w-4" /> Issue & Sync Payslip
-                </Button>
+                {/* Live Dynamic Computation Preview */}
+                <div className="rounded-xl border bg-muted/40 p-4 space-y-1.5 text-xs">
+                  <div className="flex justify-between font-semibold">
+                    <span>Total Gross Earnings:</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">₹{calculatedGross.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold">
+                    <span>Total Deductions:</span>
+                    <span className="font-mono text-rose-600 font-bold">₹{calculatedDeductions.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between font-extrabold text-sm border-t pt-1.5">
+                    <span>Net Payable Salary:</span>
+                    <span className="font-mono text-primary font-black">₹{calculatedNet.toLocaleString("en-IN")}</span>
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full bg-primary font-bold">Issue & Publish Isolated Payslip</Button>
               </form>
             </DialogContent>
           </Dialog>
         )}
       </div>
 
-      <Tabs defaultValue="my-payslips" className="space-y-4">
-        <TabsList className="bg-muted p-1">
-          <TabsTrigger value="my-payslips">My Payslips ({myPayslips.length})</TabsTrigger>
-          {isAdmin && <TabsTrigger value="company-payroll">Master Company Payroll ({payslips.length})</TabsTrigger>}
+      {/* Overview Metric Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="glass-card border-l-4 border-l-emerald-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">My Last Net Salary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{latestNet}</div>
+            <p className="text-xs text-muted-foreground mt-1">Transferred via Direct Deposit</p>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-l-4 border-l-blue-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Issued Payslips</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-foreground">{isAdmin ? payslips.length : myPayslips.length} Statements</div>
+            <p className="text-xs text-muted-foreground mt-1">Verified corporate records</p>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-l-4 border-l-indigo-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Corporate Tax Year</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-foreground">FY 2026-27</div>
+            <p className="text-xs text-muted-foreground mt-1">Form 16 & Tax declarations active</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Payslips Table Tabs */}
+      <Tabs defaultValue="my-slips" className="space-y-4">
+        <TabsList className="bg-card border p-1 rounded-xl">
+          <TabsTrigger value="my-slips" className="font-bold">My Personal Salary Slips</TabsTrigger>
+          {isAdmin && <TabsTrigger value="all-slips" className="font-bold">Company Master Registry ({payslips.length})</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="my-payslips" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="glass-card border-l-4 border-l-emerald-500">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Latest Net Salary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{latestNet}</div>
-                <p className="text-xs text-muted-foreground mt-1">Direct deposit completed</p>
-              </CardContent>
-            </Card>
-            <Card className="glass-card border-l-4 border-l-blue-500">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Payslips Issued</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-extrabold text-foreground">{myPayslips.length} Slips</div>
-                <p className="text-xs text-muted-foreground mt-1">Verified records</p>
-              </CardContent>
-            </Card>
-            <Card className="glass-card border-l-4 border-l-purple-500">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Verification & Compliance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-extrabold text-foreground">100% Tax Compliant</div>
-                <p className="text-xs text-muted-foreground mt-1">TDS & PF Deposited</p>
-              </CardContent>
-            </Card>
-          </div>
-
+        {/* Tab 1: Personal Payslips */}
+        <TabsContent value="my-slips" className="space-y-4">
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">My Monthly Payslip History</CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">Real-time issued salary slips. View, print, or download PDF statements.</CardDescription>
+              <CardTitle className="text-lg font-bold text-foreground">My Monthly Payslip Records</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">Download or view your confidential salary slips.</CardDescription>
             </CardHeader>
             <CardContent>
               {myPayslips.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <Wallet className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                  <h3 className="text-lg font-semibold text-foreground">No Payslips Issued Yet</h3>
-                  <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                    Payslips will automatically sync here in real time as soon as the Admin issues them.
-                  </p>
-                </div>
+                <div className="py-8 text-center text-xs text-muted-foreground">No payslips issued for your account yet.</div>
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="border-border">
                       <TableHead className="font-bold">Payslip ID</TableHead>
                       <TableHead className="font-bold">Pay Month</TableHead>
                       <TableHead className="font-bold">Gross Pay</TableHead>
                       <TableHead className="font-bold">Deductions</TableHead>
-                      <TableHead className="font-bold">Net Payable</TableHead>
+                      <TableHead className="font-bold">Net Salary</TableHead>
                       <TableHead className="font-bold">Status</TableHead>
-                      <TableHead className="text-right font-bold">Actions</TableHead>
+                      <TableHead className="text-right font-bold">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {myPayslips.map((payslip) => (
-                      <TableRow key={payslip.id}>
-                        <TableCell className="font-mono text-xs font-semibold text-primary">{payslip.id}</TableCell>
-                        <TableCell className="font-medium text-foreground">{payslip.month}</TableCell>
-                        <TableCell>{payslip.gross}</TableCell>
-                        <TableCell className="text-rose-600 font-medium">{payslip.deductions}</TableCell>
-                        <TableCell className="font-bold text-emerald-600 dark:text-emerald-400">{payslip.net}</TableCell>
-                        <TableCell><Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">{payslip.status}</Badge></TableCell>
+                    {myPayslips.map((slip) => (
+                      <TableRow key={slip.id} className="hover:bg-muted/40 border-border">
+                        <TableCell className="font-mono text-xs font-semibold text-primary">{slip.id}</TableCell>
+                        <TableCell className="font-bold text-foreground text-sm">{slip.month}</TableCell>
+                        <TableCell className="font-mono text-xs">{slip.gross}</TableCell>
+                        <TableCell className="font-mono text-xs text-rose-600">{slip.deductions}</TableCell>
+                        <TableCell className="font-mono text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{slip.net}</TableCell>
+                        <TableCell><Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold">{slip.status}</Badge></TableCell>
                         <TableCell className="text-right">
-                          <Button variant="outline" size="sm" onClick={() => setSelectedPayslip(payslip)}>
-                            <Eye className="mr-2 h-3.5 w-3.5 text-blue-500" /> View / Print PDF
+                          <Button variant="outline" size="sm" className="h-8 text-xs font-bold" onClick={() => setSelectedPayslip(slip)}>
+                            <FileText className="mr-1.5 h-3.5 w-3.5 text-indigo-500" /> View Document
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -238,17 +331,18 @@ export default function PayrollPage() {
           </Card>
         </TabsContent>
 
+        {/* Tab 2: Admin Company Registry */}
         {isAdmin && (
-          <TabsContent value="company-payroll" className="space-y-4">
+          <TabsContent value="all-slips" className="space-y-4">
             <Card className="glass-card">
               <CardHeader>
-                <CardTitle className="text-lg font-bold text-foreground">Company Master Payroll Registry</CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">Admin view of all issued employee salary slips across the organization.</CardDescription>
+                <CardTitle className="text-lg font-bold text-foreground">Company Master Salary Registry</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">All employee payslips generated across the company.</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="border-border">
                       <TableHead className="font-bold">Payslip ID</TableHead>
                       <TableHead className="font-bold">Employee Name</TableHead>
                       <TableHead className="font-bold">Pay Month</TableHead>
@@ -261,17 +355,17 @@ export default function PayrollPage() {
                   </TableHeader>
                   <TableBody>
                     {payslips.map((slip) => (
-                      <TableRow key={slip.id}>
+                      <TableRow key={slip.id} className="hover:bg-muted/40 border-border">
                         <TableCell className="font-mono text-xs font-semibold text-primary">{slip.id}</TableCell>
-                        <TableCell className="font-semibold text-foreground">{slip.employeeName}</TableCell>
-                        <TableCell>{slip.month}</TableCell>
-                        <TableCell>{slip.gross}</TableCell>
-                        <TableCell className="text-rose-600">{slip.deductions}</TableCell>
-                        <TableCell className="font-bold text-emerald-600 dark:text-emerald-400">{slip.net}</TableCell>
+                        <TableCell className="font-bold text-foreground text-sm">{slip.employeeName}</TableCell>
+                        <TableCell className="text-xs font-semibold">{slip.month}</TableCell>
+                        <TableCell className="font-mono text-xs">{slip.gross}</TableCell>
+                        <TableCell className="font-mono text-xs text-rose-600">{slip.deductions}</TableCell>
+                        <TableCell className="font-mono text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{slip.net}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{slip.date}</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="outline" size="sm" onClick={() => setSelectedPayslip(slip)}>
-                            <FileText className="mr-2 h-3.5 w-3.5 text-indigo-500" /> View Document
+                          <Button variant="outline" size="sm" className="h-8 text-xs font-bold" onClick={() => setSelectedPayslip(slip)}>
+                            <FileText className="mr-1.5 h-3.5 w-3.5 text-indigo-500" /> View Document
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -289,19 +383,19 @@ export default function PayrollPage() {
         <Dialog open={!!selectedPayslip} onOpenChange={() => setSelectedPayslip(null)}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <div id="printable-payslip" className="p-6 bg-card rounded-xl space-y-6 text-foreground border">
-              {/* Header */}
+              {/* Header with Updated Official Corporate Address */}
               <div className="flex justify-between items-start border-b pb-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <Building2 className="h-6 w-6 text-primary" />
                     <h3 className="text-xl font-extrabold text-foreground">Kenzo Infosystems Pvt. Ltd.</h3>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Sector 62, Tech Hub, Noida, UP 201301, India</p>
+                  <p className="text-xs text-muted-foreground font-semibold mt-1">107, BR Complex, Mayur Vihar Phase 1, New Delhi - 110091</p>
                   <p className="text-xs text-muted-foreground">CIN: U72900UP2020PTC123456 • HRMS Payroll System</p>
                 </div>
                 <div className="text-right">
                   <Badge className="bg-primary text-primary-foreground font-mono text-xs">{selectedPayslip.id}</Badge>
-                  <p className="text-xs font-bold mt-2 text-foreground">SALARY SLIP: {selectedPayslip.month}</p>
+                  <p className="text-xs font-bold mt-2 text-foreground uppercase">SALARY SLIP: {selectedPayslip.month}</p>
                 </div>
               </div>
 
@@ -338,21 +432,21 @@ export default function PayrollPage() {
                   </TableHeader>
                   <TableBody className="text-xs">
                     <TableRow>
-                      <TableCell>Basic Salary</TableCell>
-                      <TableCell className="text-right font-mono">{selectedPayslip.basicPay}</TableCell>
-                      <TableCell>Provident Fund (PF)</TableCell>
+                      <TableCell className="font-medium">Basic Salary</TableCell>
+                      <TableCell className="text-right font-mono font-bold">{selectedPayslip.basicPay}</TableCell>
+                      <TableCell className="font-medium">Provident Fund (PF)</TableCell>
                       <TableCell className="text-right font-mono text-rose-600">{selectedPayslip.pfDeduction}</TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>House Rent Allowance (HRA)</TableCell>
-                      <TableCell className="text-right font-mono">{selectedPayslip.hra}</TableCell>
-                      <TableCell>Income Tax (TDS)</TableCell>
+                      <TableCell className="font-medium">House Rent Allowance (HRA)</TableCell>
+                      <TableCell className="text-right font-mono font-bold">{selectedPayslip.hra}</TableCell>
+                      <TableCell className="font-medium">Income Tax (TDS)</TableCell>
                       <TableCell className="text-right font-mono text-rose-600">{selectedPayslip.tdsDeduction}</TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Special Allowance</TableCell>
-                      <TableCell className="text-right font-mono">{selectedPayslip.specialAllowance}</TableCell>
-                      <TableCell>Professional Tax</TableCell>
+                      <TableCell className="font-medium">Special Allowance</TableCell>
+                      <TableCell className="text-right font-mono font-bold">{selectedPayslip.specialAllowance}</TableCell>
+                      <TableCell className="font-medium">Professional Tax</TableCell>
                       <TableCell className="text-right font-mono text-rose-600">₹0</TableCell>
                     </TableRow>
                     <TableRow className="font-bold bg-muted/30">
@@ -371,7 +465,7 @@ export default function PayrollPage() {
                   <p className="text-xs uppercase font-bold text-muted-foreground">Total Net Payable</p>
                   <p className="text-xs text-muted-foreground">Transferred via Corporate NEFT/RTGS</p>
                 </div>
-                <div className="text-2xl font-extrabold text-primary font-mono">
+                <div className="text-2xl font-black text-primary font-mono">
                   {selectedPayslip.net}
                 </div>
               </div>
