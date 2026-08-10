@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo, useEffect } from "react"
+import Link from "next/link"
 import { motion } from "framer-motion"
 import {
   Users,
@@ -19,6 +20,7 @@ import {
   ArrowRight,
   Trash2,
   MessageSquare,
+  User,
 } from "lucide-react"
 import {
   AreaChart,
@@ -264,6 +266,11 @@ export default function DashboardPage() {
                 <span>{unreadMsgCount} New Direct Message{unreadMsgCount > 1 ? "s" : ""}</span>
               </Badge>
             )}
+            <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md shadow-primary/20">
+              <Link href={`/employees/${encodeURIComponent(user?.email || user?.id || 'EMP-1002')}`}>
+                <User className="mr-2 h-4 w-4" /> My Profile Settings
+              </Link>
+            </Button>
             <Button variant="outline" className="border-border text-foreground">
               <Calendar className="mr-2 h-4 w-4 text-blue-500" /> August 2026
             </Button>

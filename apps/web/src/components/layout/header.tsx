@@ -333,8 +333,8 @@ export function Header() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/employees/${user?.id || 'EMP-1001'}`)}>
-              Profile Settings
+            <DropdownMenuItem className="cursor-pointer font-bold text-foreground" onClick={() => router.push(`/employees/${encodeURIComponent(user?.email || user?.id || 'EMP-1002')}`)}>
+              My Profile Settings
             </DropdownMenuItem>
             {isAdmin && (
               <DropdownMenuItem className="cursor-pointer" onClick={() => router.push("/settings")}>

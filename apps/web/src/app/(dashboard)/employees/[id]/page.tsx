@@ -48,9 +48,27 @@ export default function EmployeeProfilePage() {
   const [employeesList, setEmployeesList] = React.useState<EmployeeRecord[]>(() => getStoredEmployees())
   
   const currentEmp = React.useMemo(() => {
+    // If user is regular employee (!isAdmin), strictly scope profile to their own record!
+    if (!isAdmin && user?.email) {
+      const myEmp = employeesList.find(e => e.email.toLowerCase() === user.email.toLowerCase() || e.id.toLowerCase() === user.id?.toLowerCase())
+      if (myEmp) return myEmp
+    }
+
     if (!routeId) return employeesList[0]
-    return employeesList.find(e => e.id.toLowerCase() === routeId.toLowerCase() || e.email.toLowerCase() === routeId.toLowerCase()) || employeesList[0]
-  }, [employeesList, routeId])
+
+    const decoded = decodeURIComponent(routeId).toLowerCase()
+    const found = employeesList.find(e => e.id.toLowerCase() === decoded || e.email.toLowerCase() === decoded)
+
+    if (found) {
+      if (!isAdmin && user?.email && found.email.toLowerCase() !== user.email.toLowerCase()) {
+        const myEmp = employeesList.find(e => e.email.toLowerCase() === user.email.toLowerCase())
+        if (myEmp) return myEmp
+      }
+      return found
+    }
+
+    return employeesList[0]
+  }, [employeesList, routeId, isAdmin, user])
 
   const [isEditOpen, setIsEditOpen] = React.useState(false)
   const [formData, setFormData] = React.useState<Partial<EmployeeRecord>>({})
