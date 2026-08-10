@@ -171,8 +171,8 @@ export default function OrganizationPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Working Redirect Website Link Widget */}
-              <div className="grid gap-4 md:grid-cols-3">
+              {/* Working Redirect Website & Contact Info Widgets */}
+              <div className="grid gap-4 md:grid-cols-4">
                 <div className="flex items-center gap-3 p-4 rounded-xl border bg-background/50 hover:bg-muted/40 transition-colors">
                   <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
                     <Globe className="h-5 w-5" />
@@ -183,10 +183,10 @@ export default function OrganizationPage() {
                       href="https://kenzoinfosystems.com/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline flex items-center gap-1 mt-0.5"
+                      className="text-xs font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline flex items-center gap-1 mt-0.5"
                     >
-                      www.kenzoinfosystems.com
-                      <ExternalLink className="h-3.5 w-3.5" />
+                      kenzoinfosystems.com
+                      <ExternalLink className="h-3 w-3" />
                     </a>
                   </div>
                 </div>
@@ -197,7 +197,7 @@ export default function OrganizationPage() {
                   </div>
                   <div>
                     <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">OFFICIAL EMAIL</div>
-                    <div className="text-sm font-extrabold text-foreground mt-0.5">contact@kenzoinfosystems.com</div>
+                    <div className="text-xs font-extrabold text-foreground mt-0.5">sales@kenzoinfosystems.com</div>
                   </div>
                 </div>
 
@@ -207,7 +207,17 @@ export default function OrganizationPage() {
                   </div>
                   <div>
                     <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">CONTACT PHONE</div>
-                    <div className="text-sm font-extrabold text-foreground mt-0.5">+91 (120) 456-7890</div>
+                    <div className="text-xs font-extrabold text-foreground mt-0.5">9999740587</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 rounded-xl border bg-background/50">
+                  <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                    <Phone className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">WHATSAPP</div>
+                    <div className="text-xs font-extrabold text-foreground mt-0.5">8810531196</div>
                   </div>
                 </div>
               </div>
@@ -220,7 +230,7 @@ export default function OrganizationPage() {
                 <div>
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">REGISTERED CORPORATE ADDRESS</div>
                   <div className="text-sm font-bold text-foreground mt-0.5">
-                    107, BR Complex, Mayur Vihar Phase 1, New Delhi - 110091
+                    Kenzo - 32–C, UNIT NO. 107, B.R. COMPLEX, MAYUR VIHAR PHASE I, EAST DELHI – 110091
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">CIN: U72900DL2020PTC368912 • ISO 27001:2022 Certified Corporate Office</div>
                 </div>

@@ -149,11 +149,15 @@ export default function SettingsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="contactEmail">Contact Email</Label>
-                    <Input id="contactEmail" type="email" defaultValue="contact@kenzoinfosystems.com" />
+                    <Input id="contactEmail" type="email" defaultValue="sales@kenzoinfosystems.com" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="contactPhone">Contact Phone</Label>
-                    <Input id="contactPhone" type="tel" defaultValue="+91 (120) 456-7890" />
+                    <Input id="contactPhone" type="tel" defaultValue="9999740587" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsApp">WhatsApp Support</Label>
+                    <Input id="whatsApp" type="tel" defaultValue="8810531196" />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -169,7 +173,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address">Registered Address</Label>
-                  <Input id="address" defaultValue="107, BR Complex, Mayur Vihar Phase 1, New Delhi - 110091" />
+                  <Input id="address" defaultValue="Kenzo - 32–C, UNIT NO. 107, B.R. COMPLEX, MAYUR VIHAR PHASE I, EAST DELHI – 110091" />
                 </div>
               </CardContent>
               <CardFooter>
