@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Sun,
   Moon,
+  X,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
@@ -34,7 +35,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth"
 
-const navGroups = [
+export const navGroups = [
   {
     title: "WORKFORCE",
     items: [
@@ -79,9 +80,8 @@ const navGroups = [
   },
 ]
 
-export function Sidebar() {
+export function SidebarContent({ onItemClick, collapsed = false }: { onItemClick?: () => void; collapsed?: boolean }) {
   const pathname = usePathname()
-  const [collapsed, setCollapsed] = React.useState(false)
   const { theme, setTheme } = useTheme()
   const { user, isAdmin } = useAuth()
 
@@ -96,43 +96,26 @@ export function Sidebar() {
     ],
   }
 
-  const filteredGroups = isAdmin
-    ? navGroups
-    : [employeeNavGroup]
+  const filteredGroups = isAdmin ? navGroups : [employeeNavGroup]
 
   return (
-    <motion.aside
-      initial={{ width: 280 }}
-      animate={{ width: collapsed ? 80 : 280 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="relative flex h-screen flex-col border-r border-slate-800/80 bg-[#050913] text-slate-100 z-30 select-none"
-    >
+    <div className="flex flex-col h-full bg-[#050913] text-slate-100 select-none">
       {/* Brand Header */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-slate-800/80">
-        {!collapsed && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center gap-2.5 font-extrabold text-white text-lg tracking-tight"
-          >
-            <img src="/logo.png" alt="Kenzo Logo" className="h-9 w-9 object-contain rounded-xl" />
+      <div className="flex h-16 items-center justify-between px-4 border-b border-slate-800/80 shrink-0">
+        <div className="flex items-center gap-2.5 font-extrabold text-white text-lg tracking-tight">
+          <img src="/logo.png" alt="Kenzo Logo" className="h-9 w-9 object-contain rounded-xl shrink-0" />
+          {!collapsed && (
             <span>Kenzo<span className="text-blue-500 font-normal">HRMS</span></span>
-          </motion.div>
+          )}
+        </div>
+        {onItemClick && (
+          <Button variant="ghost" size="icon" onClick={onItemClick} className="md:hidden text-slate-400 hover:text-white">
+            <X size={20} />
+          </Button>
         )}
-        {collapsed && (
-          <img src="/logo.png" alt="Kenzo Logo" className="mx-auto h-9 w-9 object-contain rounded-xl" />
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute -right-3.5 top-4 h-7 w-7 rounded-full border border-slate-700 bg-slate-900 text-slate-200 shadow-md hover:bg-blue-600 hover:text-white transition-colors"
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </Button>
       </div>
 
-      {/* Navigation Group Stream */}
+      {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 custom-scrollbar">
         {filteredGroups.map((group, i) => (
           <div key={i} className="mb-5 px-3">
@@ -148,6 +131,7 @@ export function Sidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={onItemClick}
                     className={cn(
                       "flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-200",
                       isActive
@@ -168,8 +152,8 @@ export function Sidebar() {
         ))}
       </div>
 
-      {/* Footer Profile & Toggle */}
-      <div className="border-t border-slate-800/80 p-3 bg-slate-950/60 flex flex-col gap-2">
+      {/* Footer Profile & Theme Switcher */}
+      <div className="border-t border-slate-800/80 p-3 bg-slate-950/60 flex flex-col gap-2 shrink-0">
         {user && (
           <div className={cn("flex items-center gap-3 px-2 py-2 rounded-xl bg-slate-900/50 border border-slate-800/50", collapsed ? "justify-center" : "")}>
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600/20 text-blue-400 font-bold text-xs uppercase">
@@ -195,6 +179,30 @@ export function Sidebar() {
           {!collapsed && <span className="ml-2.5">Switch Theme</span>}
         </Button>
       </div>
+    </div>
+  )
+}
+
+export function Sidebar() {
+  const [collapsed, setCollapsed] = React.useState(false)
+
+  return (
+    <motion.aside
+      initial={{ width: 280 }}
+      animate={{ width: collapsed ? 80 : 280 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="hidden md:flex relative h-screen flex-col border-r border-slate-800/80 bg-[#050913] text-slate-100 z-30 select-none shrink-0"
+    >
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute -right-3.5 top-4 h-7 w-7 rounded-full border border-slate-700 bg-slate-900 text-slate-200 shadow-md hover:bg-blue-600 hover:text-white transition-colors z-40"
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+      </Button>
+
+      <SidebarContent collapsed={collapsed} />
     </motion.aside>
   )
 }

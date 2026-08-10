@@ -244,7 +244,7 @@ export default function EmployeesPage() {
             />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto p-2 sm:p-6">
           <Table>
             <TableHeader>
               <TableRow className="border-border">

@@ -204,7 +204,7 @@ export default function LeaveManagementPage() {
                 <CardTitle className="text-lg font-bold text-foreground">Company-Wide Leave Requests</CardTitle>
                 <CardDescription className="text-xs text-muted-foreground">Review, approve, or delete employee leave applications across departments.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-x-auto p-2 sm:p-6">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border">

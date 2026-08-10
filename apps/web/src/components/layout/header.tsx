@@ -18,6 +18,7 @@ import {
   UserCheck,
   CheckCheck,
   Lock,
+  Menu,
 } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
@@ -50,7 +51,7 @@ import {
   UserNotification,
 } from "@/lib/notification-store"
 
-export function Header() {
+export function Header({ onMobileMenuToggle }: { onMobileMenuToggle?: () => void }) {
   const router = useRouter()
   const { user, isAdmin, logout } = useAuth()
 
@@ -121,34 +122,46 @@ export function Header() {
   }
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card/80 backdrop-blur-xl px-6 z-20">
-      {/* Search Bar */}
-      <div className="flex w-full max-w-md items-center gap-3">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card/80 backdrop-blur-xl px-3 sm:px-6 z-20 gap-2">
+      {/* Left Mobile Menu Toggle + Search Bar */}
+      <div className="flex items-center gap-2 flex-1 max-w-md">
+        {onMobileMenuToggle && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onMobileMenuToggle}
+            className="md:hidden text-foreground hover:bg-muted shrink-0"
+            aria-label="Toggle Mobile Navigation Menu"
+          >
+            <Menu size={20} />
+          </Button>
+        )}
+
         <div className="relative w-full">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search employees, payroll, attendance, AI insights..."
-            className="w-full bg-muted/40 border-border pl-9 pr-12 text-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-primary rounded-xl"
+            placeholder="Search HRMS..."
+            className="w-full bg-muted/40 border-border pl-9 pr-4 sm:pr-12 text-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-primary rounded-xl"
           />
-          <kbd className="pointer-events-none absolute right-3 top-2.5 hidden h-5 select-none items-center gap-1 rounded border border-border bg-muted/80 px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex">
+          <kbd className="pointer-events-none absolute right-3 top-2.5 hidden h-5 select-none items-center gap-1 rounded border border-border bg-muted/80 px-1.5 font-mono text-[10px] font-medium text-muted-foreground lg:flex">
             <span className="text-xs">⌘</span>K
           </kbd>
         </div>
       </div>
 
       {/* Right Header Action Icons */}
-      <div className="flex items-center gap-3">
-        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-xs hidden sm:flex items-center gap-1.5 py-1 px-3 font-semibold">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-xs hidden lg:flex items-center gap-1.5 py-1 px-3 font-semibold">
           <ShieldCheck className="h-3.5 w-3.5" /> Kenzo Cloud Active
         </Badge>
 
         {/* 1. Quick Action Dropdown Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" className="hidden sm:flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md shadow-primary/20 rounded-xl">
+            <Button size="sm" className="hidden sm:flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md shadow-primary/20 rounded-xl text-xs">
               <Plus size={15} />
-              Quick Action
+              <span>Quick Action</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56 bg-card border-border text-card-foreground" align="end">
@@ -172,18 +185,18 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* 2. Chat / Message Dialog (With Buzz Animation & Unread Badge Count) */}
+        {/* 2. Chat / Message Dialog */}
         <Dialog open={isChatOpen} onOpenChange={handleOpenChat}>
           <DialogTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className={`relative text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all ${
+              className={`relative text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all h-9 w-9 ${
                 unreadMessagesCount > 0 ? "animate-bounce text-rose-500 bg-rose-500/10" : ""
               }`}
               title="Admin Direct Chat"
             >
-              <MessageSquare size={19} className={unreadMessagesCount > 0 ? "text-rose-500" : ""} />
+              <MessageSquare size={18} className={unreadMessagesCount > 0 ? "text-rose-500" : ""} />
               {unreadMessagesCount > 0 ? (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-extrabold text-white ring-2 ring-card shadow-lg">
                   {unreadMessagesCount}
@@ -193,14 +206,14 @@ export function Header() {
               )}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-xl max-h-[85vh] flex flex-col justify-between p-6">
+          <DialogContent className="w-[95vw] max-w-xl max-h-[85vh] flex flex-col justify-between p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-foreground font-extrabold text-lg">
+                <span className="flex items-center gap-2 text-foreground font-extrabold text-base sm:text-lg">
                   <MessageSquare className="h-5 w-5 text-blue-500" /> Direct Executive Messenger
                 </span>
                 {!isAdmin && (
-                  <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px] font-bold flex items-center gap-1">
+                  <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px] font-bold hidden sm:flex items-center gap-1">
                     <Lock className="h-3 w-3" /> Admin & HR Chat Only
                   </Badge>
                 )}
@@ -230,7 +243,7 @@ export function Header() {
             </div>
 
             {/* Chat Conversation Window */}
-            <div className="flex-1 overflow-y-auto space-y-3 p-4 my-2 rounded-xl border bg-muted/20 max-h-[350px]">
+            <div className="flex-1 overflow-y-auto space-y-3 p-3 sm:p-4 my-2 rounded-xl border bg-muted/20 max-h-[350px]">
               {conversationMessages.length === 0 ? (
                 <div className="text-center py-8 text-xs text-muted-foreground flex flex-col items-center gap-2">
                   <UserCheck className="h-8 w-8 text-blue-500/40" />
@@ -245,7 +258,7 @@ export function Header() {
                         <span>{msg.senderName}</span>
                         <span>• {msg.timestamp}</span>
                       </div>
-                      <div className={`p-3 rounded-2xl max-w-[80%] text-xs font-medium ${isMe ? "bg-primary text-primary-foreground rounded-tr-none shadow-md" : "bg-card border text-foreground rounded-tl-none"}`}>
+                      <div className={`p-3 rounded-2xl max-w-[85%] text-xs font-medium ${isMe ? "bg-primary text-primary-foreground rounded-tr-none shadow-md" : "bg-card border text-foreground rounded-tl-none"}`}>
                         {msg.content}
                       </div>
                     </div>
@@ -259,11 +272,11 @@ export function Header() {
               <Input
                 value={messageInput}
                 onChange={e => setMessageInput(e.target.value)}
-                placeholder="Type your message to HR Admin..."
+                placeholder="Type your message..."
                 className="text-xs bg-background text-foreground"
                 required
               />
-              <Button type="submit" size="sm" className="bg-primary font-bold px-4">
+              <Button type="submit" size="sm" className="bg-primary font-bold px-3 sm:px-4 text-xs">
                 <Send className="h-4 w-4 mr-1" /> Send
               </Button>
             </form>
@@ -273,18 +286,18 @@ export function Header() {
         {/* 3. Notifications Dropdown Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl" title="Notifications">
-              <Bell size={19} />
+            <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl h-9 w-9" title="Notifications">
+              <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-bold text-white ring-2 ring-card">
+                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-bold text-white ring-2 ring-card">
                   {unreadCount}
                 </span>
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-80 bg-card border-border text-card-foreground p-2" align="end">
+          <DropdownMenuContent className="w-72 sm:w-80 bg-card border-border text-card-foreground p-2" align="end">
             <div className="flex items-center justify-between px-2 py-1 border-b pb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-foreground">My Notifications ({userNotifications.length})</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-foreground">Notifications ({userNotifications.length})</span>
               {unreadCount > 0 && (
                 <Button size="sm" variant="ghost" onClick={handleMarkAllNotifications} className="h-6 text-[10px] text-blue-500 font-bold px-1.5">
                   <CheckCheck className="h-3 w-3 mr-1" /> Mark Read
@@ -313,7 +326,7 @@ export function Header() {
         {/* 4. User Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-primary/30 hover:ring-primary">
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-primary/30 hover:ring-primary p-0">
               <Avatar className="h-9 w-9">
                 <AvatarImage src="/avatars/01.png" alt={`@${user?.name || 'user'}`} />
                 <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xs">{user?.initials || 'U'}</AvatarFallback>
@@ -324,7 +337,7 @@ export function Header() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-bold text-foreground">{user?.name}</p>
-                <p className="text-xs text-muted-foreground font-mono">
+                <p className="text-xs text-muted-foreground font-mono truncate">
                   {user?.email}
                 </p>
                 <Badge className="w-fit bg-primary/10 text-primary border-primary/20 text-[10px] mt-1 capitalize font-bold">
