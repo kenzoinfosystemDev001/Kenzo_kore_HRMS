@@ -48,27 +48,24 @@ export default function EmployeeProfilePage() {
   const [employeesList, setEmployeesList] = React.useState<EmployeeRecord[]>(() => getStoredEmployees())
   
   const currentEmp = React.useMemo(() => {
-    // If user is regular employee (!isAdmin), strictly scope profile to their own record!
-    if (!isAdmin && user?.email) {
-      const myEmp = employeesList.find(e => e.email.toLowerCase() === user.email.toLowerCase() || e.id.toLowerCase() === user.id?.toLowerCase())
-      if (myEmp) return myEmp
+    const list = employeesList && employeesList.length > 0 ? employeesList : getStoredEmployees()
+    const decodedRoute = routeId ? decodeURIComponent(routeId).toLowerCase() : ""
+
+    if (decodedRoute) {
+      const match = list.find(e => 
+        e.id.toLowerCase() === decodedRoute || 
+        e.email.toLowerCase() === decodedRoute
+      )
+      if (match) return match
     }
 
-    if (!routeId) return employeesList[0]
-
-    const decoded = decodeURIComponent(routeId).toLowerCase()
-    const found = employeesList.find(e => e.id.toLowerCase() === decoded || e.email.toLowerCase() === decoded)
-
-    if (found) {
-      if (!isAdmin && user?.email && found.email.toLowerCase() !== user.email.toLowerCase()) {
-        const myEmp = employeesList.find(e => e.email.toLowerCase() === user.email.toLowerCase())
-        if (myEmp) return myEmp
-      }
-      return found
+    if (user?.email) {
+      const matchUser = list.find(e => e.email.toLowerCase() === user.email.toLowerCase() || e.id.toLowerCase() === user.id?.toLowerCase())
+      if (matchUser) return matchUser
     }
 
-    return employeesList[0]
-  }, [employeesList, routeId, isAdmin, user])
+    return list.find(e => e.email.toLowerCase() === "sujal.kumar@kenzoinfosystems.com") || list[0]
+  }, [employeesList, routeId, user])
 
   const [isEditOpen, setIsEditOpen] = React.useState(false)
   const [formData, setFormData] = React.useState<Partial<EmployeeRecord>>({})

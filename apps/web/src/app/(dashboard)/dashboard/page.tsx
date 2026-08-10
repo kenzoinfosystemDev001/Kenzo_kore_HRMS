@@ -42,7 +42,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import { useAuth } from "@/lib/auth"
-import { getStoredEmployees, EmployeeRecord } from "@/lib/employee-store"
+import { getStoredEmployees, updateStoredEmployee, EmployeeRecord } from "@/lib/employee-store"
 import { getStoredLeaves, updateLeaveStatus, addLeaveRequest, deleteLeaveRequest, LeaveRequestRecord } from "@/lib/leave-store"
 import { getStoredPayslips, PayslipRecord } from "@/lib/payslip-store"
 import { getNotificationsForUser, markNotificationAsRead, addTargetNotification, UserNotification } from "@/lib/notification-store"
@@ -213,6 +213,8 @@ export default function DashboardPage() {
   if (!isAdmin) {
     const unreadMsgCount = getUnreadMessagesCount(user?.email)
 
+    const myEmpRecord = employees.find(e => e.email.toLowerCase() === user?.email?.toLowerCase() || e.id.toLowerCase() === user?.id?.toLowerCase()) || employees[1] || employees[0]
+
     return (
       <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
         {/* Live Admin Approval Pop-Up Notification Alert Banner */}
@@ -266,11 +268,127 @@ export default function DashboardPage() {
                 <span>{unreadMsgCount} New Direct Message{unreadMsgCount > 1 ? "s" : ""}</span>
               </Badge>
             )}
-            <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md shadow-primary/20">
-              <Link href={`/employees/${encodeURIComponent(user?.email || user?.id || 'EMP-1002')}`}>
-                <User className="mr-2 h-4 w-4" /> My Profile Settings
-              </Link>
-            </Button>
+
+            {/* Direct Interactive Profile Settings Modal Button */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md shadow-primary/20">
+                  <User className="mr-2 h-4 w-4" /> My Profile Settings
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center justify-between text-foreground font-extrabold text-lg">
+                    <span className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-blue-500" /> Edit My Personal Profile
+                    </span>
+                    <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold">
+                      {myEmpRecord?.id || "EMP-1002"}
+                    </Badge>
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground mt-1">
+                    Update personal contact info, emergency numbers, home addresses, government IDs, and medical notes.
+                  </DialogDescription>
+                </DialogHeader>
+
+                {myEmpRecord && (
+                  <form onSubmit={(e) => {
+                    e.preventDefault()
+                    const form = e.target as HTMLFormElement
+                    const formData = new FormData(form)
+                    const updatedEmp: EmployeeRecord = {
+                      ...myEmpRecord,
+                      name: (formData.get("name") as string) || myEmpRecord.name,
+                      phone: (formData.get("phone") as string) || myEmpRecord.phone,
+                      emergencyPhone: (formData.get("emergencyPhone") as string) || myEmpRecord.emergencyPhone,
+                      personalEmail: (formData.get("personalEmail") as string) || myEmpRecord.personalEmail,
+                      address: (formData.get("address") as string) || myEmpRecord.address,
+                      permanentAddress: (formData.get("permanentAddress") as string) || myEmpRecord.permanentAddress,
+                      govtIdValue: (formData.get("govtIdValue") as string) || myEmpRecord.govtIdValue,
+                      dependentNominee: (formData.get("dependentNominee") as string) || myEmpRecord.dependentNominee,
+                      qualification: (formData.get("qualification") as string) || myEmpRecord.qualification,
+                      medicalHistory: (formData.get("medicalHistory") as string) || myEmpRecord.medicalHistory,
+                    }
+                    updateStoredEmployee(updatedEmp, myEmpRecord.id)
+                    alert("Profile settings saved successfully!")
+                  }} className="space-y-4 pt-2">
+                    <div className="p-3.5 rounded-xl border border-blue-500/30 bg-blue-500/10 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs font-bold text-foreground">Need to upload verification documents?</h4>
+                        <p className="text-[11px] text-muted-foreground">Open your full 360° profile & 15-item onboarding document repository.</p>
+                      </div>
+                      <Button asChild size="sm" variant="outline" className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                        <Link href={`/employees/${encodeURIComponent(myEmpRecord.id)}`}>
+                          Open 360° Profile →
+                        </Link>
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="font-bold">Full Name</Label>
+                        <Input name="name" defaultValue={myEmpRecord.name} required />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="font-bold">Work Email (System ID)</Label>
+                        <Input defaultValue={myEmpRecord.email} disabled className="bg-muted font-mono" />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="font-bold">Primary Phone</Label>
+                        <Input name="phone" defaultValue={myEmpRecord.phone || ""} placeholder="+91 98100 12345" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="font-bold">Emergency Phone</Label>
+                        <Input name="emergencyPhone" defaultValue={myEmpRecord.emergencyPhone || ""} placeholder="+91 98351 23735" />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label>Personal Email</Label>
+                        <Input name="personalEmail" type="email" defaultValue={myEmpRecord.personalEmail || ""} placeholder="personal@example.com" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Govt ID Number</Label>
+                        <Input name="govtIdValue" defaultValue={myEmpRecord.govtIdValue || ""} placeholder="Aadhaar / PAN ID" />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label>Current / Local Address</Label>
+                        <Input name="address" defaultValue={myEmpRecord.address || ""} placeholder="Local Address" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Permanent Home Address</Label>
+                        <Input name="permanentAddress" defaultValue={myEmpRecord.permanentAddress || ""} placeholder="Home Address" />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label>Dependent Nominee Name</Label>
+                        <Input name="dependentNominee" defaultValue={myEmpRecord.dependentNominee || ""} placeholder="Nominee Name" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Qualification</Label>
+                        <Input name="qualification" defaultValue={myEmpRecord.qualification || ""} placeholder="B.Tech / MBA" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label>Medical History Notes</Label>
+                      <textarea 
+                        name="medicalHistory"
+                        className="flex min-h-[60px] w-full rounded-xl border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" 
+                        defaultValue={myEmpRecord.medicalHistory || ""} 
+                        placeholder="Medical notes or allergy details" 
+                      />
+                    </div>
+
+                    <Button type="submit" className="w-full bg-primary text-primary-foreground font-bold">
+                      Save Profile Changes
+                    </Button>
+                  </form>
+                )}
+              </DialogContent>
+            </Dialog>
+
             <Button variant="outline" className="border-border text-foreground">
               <Calendar className="mr-2 h-4 w-4 text-blue-500" /> August 2026
             </Button>
