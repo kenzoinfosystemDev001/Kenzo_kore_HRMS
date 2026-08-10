@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { Settings, Building, Shield, Bell, Blocks, Clock, Calendar, Wallet, Plus, Save } from "lucide-react"
+import { Settings, Building, Shield, Bell, Blocks, Clock, Calendar, Wallet, Plus, Save, Globe } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -157,8 +157,19 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="website">Official Corporate Website (Click to Visit)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input id="website" defaultValue="https://kenzoinfosystems.com/" readOnly className="font-bold text-blue-600 dark:text-blue-400 bg-muted/40" />
+                    <Button asChild variant="outline" className="border-blue-500/30 text-blue-600 dark:text-blue-400 font-bold shrink-0">
+                      <a href="https://kenzoinfosystems.com/" target="_blank" rel="noopener noreferrer">
+                        <Globe className="mr-2 h-4 w-4 text-blue-500" /> Visit Website
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="address">Registered Address</Label>
-                  <Input id="address" defaultValue="Tech Hub, Sector 62, Noida, UP 201301, India" />
+                  <Input id="address" defaultValue="107, BR Complex, Mayur Vihar Phase 1, New Delhi - 110091" />
                 </div>
               </CardContent>
               <CardFooter>

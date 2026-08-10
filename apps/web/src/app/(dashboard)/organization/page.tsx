@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Building2, Users, FolderTree, BadgeCheck, Plus, Trash2, UserCheck, Briefcase } from "lucide-react"
+import { Building2, Users, FolderTree, BadgeCheck, Plus, Trash2, UserCheck, Briefcase, Globe, ExternalLink, Mail, Phone, MapPin, Building } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -132,8 +132,12 @@ export default function OrganizationPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="departments" className="space-y-4">
+      <Tabs defaultValue="company" className="space-y-4">
         <TabsList className="bg-card border p-1 rounded-xl">
+          <TabsTrigger value="company" className="font-bold flex items-center gap-2">
+            <Building className="h-4 w-4 text-amber-500" />
+            Company Profile
+          </TabsTrigger>
           <TabsTrigger value="departments" className="font-bold flex items-center gap-2">
             <FolderTree className="h-4 w-4 text-blue-500" />
             Departments ({departments.length})
@@ -147,6 +151,83 @@ export default function OrganizationPage() {
             Designations ({designations.length})
           </TabsTrigger>
         </TabsList>
+
+        {/* Tab 0: Company Profile (With Working Active Website Link) */}
+        <TabsContent value="company" className="space-y-4">
+          <Card className="glass-card">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-extrabold text-foreground flex items-center gap-2">
+                    <Building className="h-5 w-5 text-amber-500" /> Kenzo Infosystems Pvt. Ltd.
+                  </CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground mt-1">
+                    Official Corporate Entity & Global Headquarters Details
+                  </CardDescription>
+                </div>
+                <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold px-3 py-1">
+                  Active Legal Entity
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Working Redirect Website Link Widget */}
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="flex items-center gap-3 p-4 rounded-xl border bg-background/50 hover:bg-muted/40 transition-colors">
+                  <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                    <Globe className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">WEBSITE</div>
+                    <a
+                      href="https://kenzoinfosystems.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline flex items-center gap-1 mt-0.5"
+                    >
+                      www.kenzoinfosystems.com
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 rounded-xl border bg-background/50">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <Mail className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">OFFICIAL EMAIL</div>
+                    <div className="text-sm font-extrabold text-foreground mt-0.5">contact@kenzoinfosystems.com</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 rounded-xl border bg-background/50">
+                  <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                    <Phone className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">CONTACT PHONE</div>
+                    <div className="text-sm font-extrabold text-foreground mt-0.5">+91 (120) 456-7890</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Registered Address */}
+              <div className="p-4 rounded-xl border bg-background/50 flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">REGISTERED CORPORATE ADDRESS</div>
+                  <div className="text-sm font-bold text-foreground mt-0.5">
+                    107, BR Complex, Mayur Vihar Phase 1, New Delhi - 110091
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">CIN: U72900DL2020PTC368912 • ISO 27001:2022 Certified Corporate Office</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Tab 1: Departments (Synced Live with Employees) */}
         <TabsContent value="departments" className="space-y-4">
