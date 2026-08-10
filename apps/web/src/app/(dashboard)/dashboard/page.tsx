@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useMemo, useEffect } from "react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import {
   Users,
@@ -21,6 +21,8 @@ import {
   Trash2,
   MessageSquare,
   User,
+  Upload,
+  FileCheck,
 } from "lucide-react"
 import {
   AreaChart,
@@ -40,9 +42,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { useAuth } from "@/lib/auth"
-import { getStoredEmployees, updateStoredEmployee, EmployeeRecord } from "@/lib/employee-store"
+import { getStoredEmployees, updateStoredEmployee, EmployeeRecord, VERIFICATION_DOCUMENTS_LIST, UploadedDocRecord } from "@/lib/employee-store"
 import { getStoredLeaves, updateLeaveStatus, addLeaveRequest, deleteLeaveRequest, LeaveRequestRecord } from "@/lib/leave-store"
 import { getStoredPayslips, PayslipRecord } from "@/lib/payslip-store"
 import { getNotificationsForUser, markNotificationAsRead, addTargetNotification, UserNotification } from "@/lib/notification-store"
@@ -56,6 +59,7 @@ const COLORS = ["#3B82F6", "#6366F1", "#EC4899", "#8B5CF6", "#10B981", "#F59E0B"
 
 export default function DashboardPage() {
   const { user, isAdmin } = useAuth()
+  const router = useRouter()
 
   // Real-Time Live Clock (Ticks every 1 second)
   const [liveTime, setLiveTime] = useState<string>("")
@@ -276,115 +280,221 @@ export default function DashboardPage() {
                   <User className="mr-2 h-4 w-4" /> My Profile Settings
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+              <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="flex items-center justify-between text-foreground font-extrabold text-lg">
                     <span className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-blue-500" /> Edit My Personal Profile
+                      <User className="h-5 w-5 text-blue-500" /> Edit My Profile & Verification Documents
                     </span>
                     <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold">
                       {myEmpRecord?.id || "EMP-1002"}
                     </Badge>
                   </DialogTitle>
                   <DialogDescription className="text-xs text-muted-foreground mt-1">
-                    Update personal contact info, emergency numbers, home addresses, government IDs, and medical notes.
+                    Update personal profile details or upload the 15 required onboarding verification documents.
                   </DialogDescription>
                 </DialogHeader>
 
                 {myEmpRecord && (
-                  <form onSubmit={(e) => {
-                    e.preventDefault()
-                    const form = e.target as HTMLFormElement
-                    const formData = new FormData(form)
-                    const updatedEmp: EmployeeRecord = {
-                      ...myEmpRecord,
-                      name: (formData.get("name") as string) || myEmpRecord.name,
-                      phone: (formData.get("phone") as string) || myEmpRecord.phone,
-                      emergencyPhone: (formData.get("emergencyPhone") as string) || myEmpRecord.emergencyPhone,
-                      personalEmail: (formData.get("personalEmail") as string) || myEmpRecord.personalEmail,
-                      address: (formData.get("address") as string) || myEmpRecord.address,
-                      permanentAddress: (formData.get("permanentAddress") as string) || myEmpRecord.permanentAddress,
-                      govtIdValue: (formData.get("govtIdValue") as string) || myEmpRecord.govtIdValue,
-                      dependentNominee: (formData.get("dependentNominee") as string) || myEmpRecord.dependentNominee,
-                      qualification: (formData.get("qualification") as string) || myEmpRecord.qualification,
-                      medicalHistory: (formData.get("medicalHistory") as string) || myEmpRecord.medicalHistory,
-                    }
-                    updateStoredEmployee(updatedEmp, myEmpRecord.id)
-                    alert("Profile settings saved successfully!")
-                  }} className="space-y-4 pt-2">
-                    <div className="p-3.5 rounded-xl border border-blue-500/30 bg-blue-500/10 flex items-center justify-between">
+                  <div className="space-y-4 pt-2">
+                    <div className="p-3.5 rounded-xl border border-blue-500/30 bg-blue-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <h4 className="text-xs font-bold text-foreground">Need to upload verification documents?</h4>
-                        <p className="text-[11px] text-muted-foreground">Open your full 360° profile & 15-item onboarding document repository.</p>
+                        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <Sparkles className="h-3.5 w-3.5 text-blue-500" /> Need to open full 360° profile page?
+                        </h4>
+                        <p className="text-[11px] text-muted-foreground">Redirect to your dedicated profile & confidential compliance dashboard.</p>
                       </div>
-                      <Button asChild size="sm" variant="outline" className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                        <Link href={`/employees/${encodeURIComponent(myEmpRecord.id)}`}>
-                          Open 360° Profile →
-                        </Link>
+                      <Button 
+                        type="button"
+                        size="sm" 
+                        className="text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer shrink-0"
+                        onClick={() => {
+                          router.push(`/employees/${encodeURIComponent(myEmpRecord.id)}`)
+                        }}
+                      >
+                        Open 360° Profile →
                       </Button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="font-bold">Full Name</Label>
-                        <Input name="name" defaultValue={myEmpRecord.name} required />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="font-bold">Work Email (System ID)</Label>
-                        <Input defaultValue={myEmpRecord.email} disabled className="bg-muted font-mono" />
-                      </div>
+                    <Tabs defaultValue="documents" className="w-full">
+                      <TabsList className="grid grid-cols-2 bg-muted p-1 rounded-xl">
+                        <TabsTrigger value="documents" className="font-bold text-xs flex items-center gap-1.5">
+                          <Upload className="h-3.5 w-3.5 text-blue-500" /> Upload Verification Documents (15)
+                        </TabsTrigger>
+                        <TabsTrigger value="details" className="font-bold text-xs">
+                          Edit Personal Details
+                        </TabsTrigger>
+                      </TabsList>
 
-                      <div className="space-y-1">
-                        <Label className="font-bold">Primary Phone</Label>
-                        <Input name="phone" defaultValue={myEmpRecord.phone || ""} placeholder="+91 98100 12345" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="font-bold">Emergency Phone</Label>
-                        <Input name="emergencyPhone" defaultValue={myEmpRecord.emergencyPhone || ""} placeholder="+91 98351 23735" />
-                      </div>
+                      {/* Tab 1: Upload Verification Documents */}
+                      <TabsContent value="documents" className="space-y-3 pt-3">
+                        <div className="rounded-xl border bg-card p-3 space-y-3">
+                          <h4 className="text-xs font-extrabold text-foreground flex items-center gap-2">
+                            <FileCheck className="h-4 w-4 text-blue-500" /> Required Onboarding Documents Checklist
+                          </h4>
+                          <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
+                            {VERIFICATION_DOCUMENTS_LIST.map((doc, idx) => {
+                              const uploaded = myEmpRecord.uploadedDocuments?.[doc.id]
+                              return (
+                                <div key={doc.id} className="p-3 rounded-lg border bg-background/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                  <div className="space-y-0.5 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-bold text-muted-foreground font-mono text-[11px]">{idx + 1}.</span>
+                                      <span className="font-bold text-foreground text-xs">{doc.title}</span>
+                                      {doc.mandatory && (
+                                        <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-[9px] font-bold px-1.5 py-0">
+                                          Mandatory**
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">{doc.description}</p>
+                                  </div>
 
-                      <div className="space-y-1">
-                        <Label>Personal Email</Label>
-                        <Input name="personalEmail" type="email" defaultValue={myEmpRecord.personalEmail || ""} placeholder="personal@example.com" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label>Govt ID Number</Label>
-                        <Input name="govtIdValue" defaultValue={myEmpRecord.govtIdValue || ""} placeholder="Aadhaar / PAN ID" />
-                      </div>
+                                  <div className="shrink-0">
+                                    {uploaded ? (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                          <CheckCircle2 className="h-3 w-3" /> Uploaded
+                                        </span>
+                                        <a 
+                                          href={uploaded.fileUrl} 
+                                          download={uploaded.fileName}
+                                          className="text-[10px] text-blue-500 underline font-bold"
+                                        >
+                                          View
+                                        </a>
+                                      </div>
+                                    ) : (
+                                      <label className="cursor-pointer">
+                                        <Input
+                                          type="file"
+                                          accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0]
+                                            if (file) {
+                                              const reader = new FileReader()
+                                              reader.onloadend = () => {
+                                                const fileUrl = reader.result as string
+                                                const nowStr = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+                                                const newDocRecord: UploadedDocRecord = {
+                                                  fileName: file.name,
+                                                  fileUrl: fileUrl,
+                                                  uploadedAt: nowStr,
+                                                  status: "Uploaded",
+                                                }
+                                                const existingUploaded = myEmpRecord.uploadedDocuments || {}
+                                                const updatedDocs = { ...existingUploaded, [doc.id]: newDocRecord }
+                                                const updatedEmp: EmployeeRecord = {
+                                                  ...myEmpRecord,
+                                                  uploadedDocuments: updatedDocs,
+                                                }
+                                                updateStoredEmployee(updatedEmp, myEmpRecord.id)
+                                                alert(`Uploaded ${doc.title} successfully!`)
+                                              }
+                                              reader.readAsDataURL(file)
+                                            }
+                                          }}
+                                        />
+                                        <span className="inline-flex items-center justify-center rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-2.5 py-1 text-[11px] shadow-sm">
+                                          <Upload className="mr-1 h-3 w-3" /> Upload File
+                                        </span>
+                                      </label>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      </TabsContent>
 
-                      <div className="space-y-1">
-                        <Label>Current / Local Address</Label>
-                        <Input name="address" defaultValue={myEmpRecord.address || ""} placeholder="Local Address" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label>Permanent Home Address</Label>
-                        <Input name="permanentAddress" defaultValue={myEmpRecord.permanentAddress || ""} placeholder="Home Address" />
-                      </div>
+                      {/* Tab 2: Edit Personal Details */}
+                      <TabsContent value="details" className="pt-3">
+                        <form onSubmit={(e) => {
+                          e.preventDefault()
+                          const form = e.target as HTMLFormElement
+                          const formData = new FormData(form)
+                          const updatedEmp: EmployeeRecord = {
+                            ...myEmpRecord,
+                            name: (formData.get("name") as string) || myEmpRecord.name,
+                            phone: (formData.get("phone") as string) || myEmpRecord.phone,
+                            emergencyPhone: (formData.get("emergencyPhone") as string) || myEmpRecord.emergencyPhone,
+                            personalEmail: (formData.get("personalEmail") as string) || myEmpRecord.personalEmail,
+                            address: (formData.get("address") as string) || myEmpRecord.address,
+                            permanentAddress: (formData.get("permanentAddress") as string) || myEmpRecord.permanentAddress,
+                            govtIdValue: (formData.get("govtIdValue") as string) || myEmpRecord.govtIdValue,
+                            dependentNominee: (formData.get("dependentNominee") as string) || myEmpRecord.dependentNominee,
+                            qualification: (formData.get("qualification") as string) || myEmpRecord.qualification,
+                            medicalHistory: (formData.get("medicalHistory") as string) || myEmpRecord.medicalHistory,
+                          }
+                          updateStoredEmployee(updatedEmp, myEmpRecord.id)
+                          alert("Profile details saved successfully!")
+                        }} className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="font-bold">Full Name</Label>
+                              <Input name="name" defaultValue={myEmpRecord.name} required />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="font-bold">Work Email (System ID)</Label>
+                              <Input defaultValue={myEmpRecord.email} disabled className="bg-muted font-mono" />
+                            </div>
 
-                      <div className="space-y-1">
-                        <Label>Dependent Nominee Name</Label>
-                        <Input name="dependentNominee" defaultValue={myEmpRecord.dependentNominee || ""} placeholder="Nominee Name" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label>Qualification</Label>
-                        <Input name="qualification" defaultValue={myEmpRecord.qualification || ""} placeholder="B.Tech / MBA" />
-                      </div>
-                    </div>
+                            <div className="space-y-1">
+                              <Label className="font-bold">Primary Phone</Label>
+                              <Input name="phone" defaultValue={myEmpRecord.phone || ""} placeholder="+91 98100 12345" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="font-bold">Emergency Phone</Label>
+                              <Input name="emergencyPhone" defaultValue={myEmpRecord.emergencyPhone || ""} placeholder="+91 98351 23735" />
+                            </div>
 
-                    <div className="space-y-1">
-                      <Label>Medical History Notes</Label>
-                      <textarea 
-                        name="medicalHistory"
-                        className="flex min-h-[60px] w-full rounded-xl border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" 
-                        defaultValue={myEmpRecord.medicalHistory || ""} 
-                        placeholder="Medical notes or allergy details" 
-                      />
-                    </div>
+                            <div className="space-y-1">
+                              <Label>Personal Email</Label>
+                              <Input name="personalEmail" type="email" defaultValue={myEmpRecord.personalEmail || ""} placeholder="personal@example.com" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label>Govt ID Number</Label>
+                              <Input name="govtIdValue" defaultValue={myEmpRecord.govtIdValue || ""} placeholder="Aadhaar / PAN ID" />
+                            </div>
 
-                    <Button type="submit" className="w-full bg-primary text-primary-foreground font-bold">
-                      Save Profile Changes
-                    </Button>
-                  </form>
+                            <div className="space-y-1">
+                              <Label>Current / Local Address</Label>
+                              <Input name="address" defaultValue={myEmpRecord.address || ""} placeholder="Local Address" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label>Permanent Home Address</Label>
+                              <Input name="permanentAddress" defaultValue={myEmpRecord.permanentAddress || ""} placeholder="Home Address" />
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label>Dependent Nominee Name</Label>
+                              <Input name="dependentNominee" defaultValue={myEmpRecord.dependentNominee || ""} placeholder="Nominee Name" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label>Qualification</Label>
+                              <Input name="qualification" defaultValue={myEmpRecord.qualification || ""} placeholder="B.Tech / MBA" />
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label>Medical History Notes</Label>
+                            <textarea 
+                              name="medicalHistory"
+                              className="flex min-h-[60px] w-full rounded-xl border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" 
+                              defaultValue={myEmpRecord.medicalHistory || ""} 
+                              placeholder="Medical notes or allergy details" 
+                            />
+                          </div>
+
+                          <Button type="submit" className="w-full bg-primary text-primary-foreground font-bold">
+                            Save Profile Changes
+                          </Button>
+                        </form>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
                 )}
               </DialogContent>
             </Dialog>
