@@ -315,64 +315,123 @@ export default function EmployeesPage() {
         </CardContent>
       </Card>
 
-      {/* Edit Employee Dialog */}
-      {isAdmin && editingEmp && (
+      {/* Edit Employee Dialog (Allowed for Admin OR Employee Self-Service) */}
+      {(isAdmin || user?.email?.toLowerCase() === editingEmp?.email?.toLowerCase()) && editingEmp && (
         <Dialog open={!!editingEmp} onOpenChange={(open) => !open && setEditingEmp(null)}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-foreground flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-amber-500" /> Edit Account & System Permissions
+              <DialogTitle className="text-foreground flex items-center gap-2 font-extrabold">
+                <ShieldCheck className="h-5 w-5 text-blue-500" /> Edit Employee Personal & Account Profile
               </DialogTitle>
-              <DialogDescription className="text-muted-foreground">Update details and access role for {editingEmp.name} ({editingEmp.id}).</DialogDescription>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Update records for {editingEmp.name} ({editingEmp.id}). Employee self-service enabled.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-2">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-foreground font-bold">Employee ID (EMP ID)</Label>
-                  <Input className="text-foreground font-mono font-bold" value={editingEmp.id} onChange={e => setEditingEmp({ ...editingEmp, id: e.target.value })} />
+                  <Input 
+                    className={!isAdmin ? "bg-muted font-mono font-bold" : "text-foreground font-mono font-bold text-primary"} 
+                    value={editingEmp.id} 
+                    disabled={!isAdmin} 
+                    onChange={e => setEditingEmp({ ...editingEmp, id: e.target.value })} 
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-foreground font-bold">Joining Date</Label>
-                  <Input className="text-foreground" value={editingEmp.joinDate} onChange={e => setEditingEmp({ ...editingEmp, joinDate: e.target.value })} placeholder="e.g. Jan 15, 2024" />
+                  <Input 
+                    className={!isAdmin ? "bg-muted" : "text-foreground"} 
+                    value={editingEmp.joinDate} 
+                    disabled={!isAdmin} 
+                    onChange={e => setEditingEmp({ ...editingEmp, joinDate: e.target.value })} 
+                    placeholder="e.g. Jan 15, 2024" 
+                  />
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <Label className="text-foreground">Full Name</Label>
-                <Input className="text-foreground" value={editingEmp.name} onChange={e => setEditingEmp({ ...editingEmp, name: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-foreground">Work Email</Label>
-                <Input className="text-foreground" value={editingEmp.email} onChange={e => setEditingEmp({ ...editingEmp, email: e.target.value })} />
-              </div>
+                <div className="space-y-1">
+                  <Label className="text-foreground font-bold">Full Name</Label>
+                  <Input className="text-foreground" value={editingEmp.name} onChange={e => setEditingEmp({ ...editingEmp, name: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-foreground font-bold">Work Email</Label>
+                  <Input className={!isAdmin ? "bg-muted" : "text-foreground"} value={editingEmp.email} disabled={!isAdmin} onChange={e => setEditingEmp({ ...editingEmp, email: e.target.value })} />
+                </div>
 
-              {/* System Access Role Selector */}
-              <div className="space-y-1">
-                <Label className="text-foreground font-bold text-sm">System Access Role</Label>
-                <Select value={editingEmp.systemRole || "Employee"} onValueChange={(val: SystemAccessRole) => setEditingEmp({ ...editingEmp, systemRole: val })}>
-                  <SelectTrigger className="w-full text-foreground bg-background font-medium">
-                    <SelectValue placeholder="Select Access Role..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Employee">Employee (Self-Service Portal Access)</SelectItem>
-                    <SelectItem value="Super_admin">Super_admin (Full Master System Access)</SelectItem>
-                    <SelectItem value="Admin">Admin (Full System & Dashboard Access)</SelectItem>
-                    <SelectItem value="HR">HR (Full HR & Workforce Management Access)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                {isAdmin && (
+                  <div className="space-y-1 md:col-span-2">
+                    <Label className="text-foreground font-bold text-sm">System Access Role</Label>
+                    <Select value={editingEmp.systemRole || "Employee"} onValueChange={(val: SystemAccessRole) => setEditingEmp({ ...editingEmp, systemRole: val })}>
+                      <SelectTrigger className="w-full text-foreground bg-background font-medium">
+                        <SelectValue placeholder="Select Access Role..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Employee">Employee (Self-Service Portal Access)</SelectItem>
+                        <SelectItem value="Super_admin">Super_admin (Full Master System Access)</SelectItem>
+                        <SelectItem value="Admin">Admin (Full System & Dashboard Access)</SelectItem>
+                        <SelectItem value="HR">HR (Full HR & Workforce Management Access)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-foreground">Job Title / Designation</Label>
-                  <Input className="text-foreground" value={editingEmp.role} onChange={e => setEditingEmp({ ...editingEmp, role: e.target.value })} />
+                  <Input className={!isAdmin ? "bg-muted" : "text-foreground"} value={editingEmp.role} disabled={!isAdmin} onChange={e => setEditingEmp({ ...editingEmp, role: e.target.value })} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-foreground">Department</Label>
-                  <Input className="text-foreground" value={editingEmp.dept} onChange={e => setEditingEmp({ ...editingEmp, dept: e.target.value })} />
+                  <Input className={!isAdmin ? "bg-muted" : "text-foreground"} value={editingEmp.dept} disabled={!isAdmin} onChange={e => setEditingEmp({ ...editingEmp, dept: e.target.value })} />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-foreground font-bold">Primary Phone</Label>
+                  <Input value={editingEmp.phone || ""} onChange={e => setEditingEmp({ ...editingEmp, phone: e.target.value })} placeholder="+91 98100 12345" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-foreground font-bold">Emergency Phone</Label>
+                  <Input value={editingEmp.emergencyPhone || ""} onChange={e => setEditingEmp({ ...editingEmp, emergencyPhone: e.target.value })} placeholder="+91 98351 23735" />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-foreground">Personal Email</Label>
+                  <Input type="email" value={editingEmp.personalEmail || ""} onChange={e => setEditingEmp({ ...editingEmp, personalEmail: e.target.value })} placeholder="personal@example.com" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-foreground">Govt ID Type & Value</Label>
+                  <Input value={editingEmp.govtIdValue || ""} onChange={e => setEditingEmp({ ...editingEmp, govtIdValue: e.target.value })} placeholder="e.g. Aadhaar 5917 3041 2902" />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-foreground">Current Address</Label>
+                  <Input value={editingEmp.address || ""} onChange={e => setEditingEmp({ ...editingEmp, address: e.target.value })} placeholder="Local Address" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-foreground">Permanent Address</Label>
+                  <Input value={editingEmp.permanentAddress || ""} onChange={e => setEditingEmp({ ...editingEmp, permanentAddress: e.target.value })} placeholder="Home Address" />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-foreground">Dependent Nominee</Label>
+                  <Input value={editingEmp.dependentNominee || ""} onChange={e => setEditingEmp({ ...editingEmp, dependentNominee: e.target.value })} placeholder="Nominee Name" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-foreground">Qualification</Label>
+                  <Input value={editingEmp.qualification || ""} onChange={e => setEditingEmp({ ...editingEmp, qualification: e.target.value })} placeholder="B.Tech / MBA" />
                 </div>
               </div>
-              <Button onClick={handleSaveEdit} className="w-full font-bold">Save Changes</Button>
+
+              <div className="space-y-1">
+                <Label className="text-foreground">Medical Notes</Label>
+                <textarea 
+                  className="flex min-h-[60px] w-full rounded-xl border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" 
+                  value={editingEmp.medicalHistory || ""} 
+                  onChange={e => setEditingEmp({ ...editingEmp, medicalHistory: e.target.value })} 
+                  placeholder="Medical history or allergy details" 
+                />
+              </div>
+
+              <Button onClick={handleSaveEdit} className="w-full font-bold bg-primary text-primary-foreground">Save Profile Changes</Button>
             </div>
           </DialogContent>
         </Dialog>

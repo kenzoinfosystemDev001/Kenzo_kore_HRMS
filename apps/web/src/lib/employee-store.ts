@@ -2,6 +2,13 @@
 
 export type SystemAccessRole = "Employee" | "Super_admin" | "Admin" | "HR"
 
+export interface UploadedDocRecord {
+  fileName: string
+  fileUrl: string
+  uploadedAt: string
+  status: "Uploaded" | "Verified" | "Rejected"
+}
+
 export interface EmployeeRecord {
   id: string
   name: string
@@ -29,7 +36,33 @@ export interface EmployeeRecord {
   medication?: string
   medicalHistory?: string
   documents?: string
+  uploadedDocuments?: Record<string, UploadedDocRecord>
 }
+
+export interface VerificationDocSpec {
+  id: string
+  title: string
+  mandatory: boolean
+  description: string
+}
+
+export const VERIFICATION_DOCUMENTS_LIST: VerificationDocSpec[] = [
+  { id: "aadhaar_card", title: "Aadhaar Card (Original + Photocopy)", mandatory: true, description: "Clear front & back copy of Govt Aadhaar ID" },
+  { id: "pan_card", title: "PAN Card (Original + Photocopy)", mandatory: true, description: "Official Income Tax PAN Card copy" },
+  { id: "perm_address_proof", title: "Permanent Address Proof", mandatory: true, description: "Passport, Electricity Bill, Voter ID, or Driving License" },
+  { id: "temp_address_proof", title: "Current/Temporary Address Proof", mandatory: false, description: "Rent agreement or utility bill (if different from permanent address)" },
+  { id: "class_10th_cert", title: "Class 10th Mark Sheet/Certificate", mandatory: true, description: "SSLC / Secondary School Board Certificate" },
+  { id: "class_12th_cert", title: "Class 12th Mark Sheet/Certificate", mandatory: true, description: "HSC / Senior Secondary School Certificate" },
+  { id: "grad_marksheet", title: "Graduation Mark Sheets (all years/semesters)", mandatory: true, description: "All semester/yearly mark sheets" },
+  { id: "grad_degree", title: "Graduation Degree Certificate", mandatory: false, description: "Final Degree or Provisional Certificate (if available)" },
+  { id: "passport_photos", title: "Two recent passport-size photographs", mandatory: false, description: "Recent passport photos with white background" },
+  { id: "cancelled_cheque", title: "Cancelled Cheque / Bank Passbook", mandatory: false, description: "Showing Account Holder Name, Account #, and IFSC Code" },
+  { id: "offer_letters", title: "Offer Letter(s) from previous employer(s)", mandatory: false, description: "Official appointment/offer letters" },
+  { id: "experience_letters", title: "Experience Letter(s) from previous employer(s)", mandatory: false, description: "Official work experience letters" },
+  { id: "relieving_letter", title: "Relieving Letter from previous employer", mandatory: false, description: "Formal relieving letter from last company" },
+  { id: "salary_slips", title: "Last 3 Salary Slips", mandatory: false, description: "Payslips for previous 3 consecutive months" },
+  { id: "updated_resume", title: "Updated Resume", mandatory: false, description: "Latest CV/Resume in PDF/DOCX format" },
+]
 
 const STORAGE_KEY = "kenzo_hrms_employees_store"
 
@@ -60,6 +93,14 @@ export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
     medication: "None",
     medicalHistory: "Annual executive health checkup clear",
     documents: "Verified (Aadhaar, Passport, Qualification)",
+    uploadedDocuments: {
+      aadhaar_card: { fileName: "Aadhaar_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
+      pan_card: { fileName: "PAN_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
+      perm_address_proof: { fileName: "Passport_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
+      class_10th_cert: { fileName: "Class10_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
+      class_12th_cert: { fileName: "Class12_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
+      grad_marksheet: { fileName: "Degree_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
+    },
   },
   {
     id: "EMP-1002",
@@ -87,6 +128,14 @@ export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
     medication: "None",
     medicalHistory: "Clean medical history notes",
     documents: "Verified (Adhaar ID, Technical Certifications, Degree)",
+    uploadedDocuments: {
+      aadhaar_card: { fileName: "Aadhaar_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
+      pan_card: { fileName: "PAN_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
+      perm_address_proof: { fileName: "VoterID_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
+      class_10th_cert: { fileName: "Class10_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
+      class_12th_cert: { fileName: "Class12_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
+      grad_marksheet: { fileName: "BTech_Marksheet_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
+    },
   },
 ]
 

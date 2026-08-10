@@ -1,8 +1,25 @@
+/* eslint-disable @next/next/no-img-element */
 "use client"
 
 import * as React from "react"
-import { ArrowLeft, Edit, ShieldCheck, Lock, Save, Camera } from "lucide-react"
+import { 
+  ArrowLeft, 
+  Edit, 
+  ShieldCheck, 
+  Lock, 
+  Save, 
+  Camera, 
+  Upload, 
+  FileCheck, 
+  FileText, 
+  CheckCircle2, 
+  AlertCircle, 
+  Trash2, 
+  Eye, 
+  Download,
+} from "lucide-react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,47 +30,110 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useParams } from "next/navigation"
+import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/lib/auth"
-import { getStoredEmployees, updateStoredEmployee, EmployeeRecord } from "@/lib/employee-store"
+import { 
+  getStoredEmployees, 
+  updateStoredEmployee, 
+  EmployeeRecord, 
+  VERIFICATION_DOCUMENTS_LIST, 
+  UploadedDocRecord 
+} from "@/lib/employee-store"
 
 export default function EmployeeProfilePage() {
   const params = useParams()
   const routeId = (params?.id as string) || ""
   const { user, isAdmin } = useAuth()
 
-  const allEmployees = React.useMemo(() => getStoredEmployees(), [])
+  const [employeesList, setEmployeesList] = React.useState<EmployeeRecord[]>(() => getStoredEmployees())
   
-  const initialEmp = React.useMemo(() => {
-    if (!routeId) return allEmployees[0]
-    return allEmployees.find(e => e.id.toLowerCase() === routeId.toLowerCase() || e.email.toLowerCase() === routeId.toLowerCase()) || allEmployees[0]
-  }, [allEmployees, routeId])
+  const currentEmp = React.useMemo(() => {
+    if (!routeId) return employeesList[0]
+    return employeesList.find(e => e.id.toLowerCase() === routeId.toLowerCase() || e.email.toLowerCase() === routeId.toLowerCase()) || employeesList[0]
+  }, [employeesList, routeId])
 
   const [isEditOpen, setIsEditOpen] = React.useState(false)
-  const [formData, setFormData] = React.useState<Partial<EmployeeRecord>>(initialEmp || {})
+  const [formData, setFormData] = React.useState<Partial<EmployeeRecord>>({})
+  const [previewDocUrl, setPreviewDocUrl] = React.useState<{ name: string; url: string } | null>(null)
 
-  const emp = initialEmp
+  const handleOpenEditDialog = (open: boolean) => {
+    setIsEditOpen(open)
+    if (open && currentEmp) {
+      setFormData(currentEmp)
+    }
+  }
 
-  if (!emp) return null
+  if (!currentEmp) return null
 
-  // Security Check: Only Admin OR the specific employee themselves can view/edit confidential fields
-  const isSelf = user?.email?.toLowerCase() === emp.email.toLowerCase()
+  // Security Check: Admin OR the employee themselves can view/edit profile and upload documents
+  const isSelf = user?.email?.toLowerCase() === currentEmp.email.toLowerCase()
   const canAccessConfidential = isAdmin || isSelf
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!emp) return
+    if (!currentEmp) return
     const updated: EmployeeRecord = {
-      ...emp,
+      ...currentEmp,
       ...formData,
     }
-    updateStoredEmployee(updated, emp.id)
+    const newList = updateStoredEmployee(updated, currentEmp.id)
+    setEmployeesList(newList)
     setIsEditOpen(false)
   }
 
+  // Handle Document File Upload
+  const handleFileUpload = (docId: string, file: File) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const fileUrl = reader.result as string
+      const nowStr = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+      
+      const newDocRecord: UploadedDocRecord = {
+        fileName: file.name,
+        fileUrl: fileUrl,
+        uploadedAt: nowStr,
+        status: "Uploaded",
+      }
+
+      const existingUploaded = currentEmp.uploadedDocuments || {}
+      const updatedDocs = { ...existingUploaded, [docId]: newDocRecord }
+
+      const updatedEmp: EmployeeRecord = {
+        ...currentEmp,
+        uploadedDocuments: updatedDocs,
+      }
+
+      const newList = updateStoredEmployee(updatedEmp, currentEmp.id)
+      setEmployeesList(newList)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Handle Document Deletion
+  const handleDeleteDoc = (docId: string) => {
+    const existingUploaded = { ...(currentEmp.uploadedDocuments || {}) }
+    delete existingUploaded[docId]
+
+    const updatedEmp: EmployeeRecord = {
+      ...currentEmp,
+      uploadedDocuments: existingUploaded,
+    }
+
+    const newList = updateStoredEmployee(updatedEmp, currentEmp.id)
+    setEmployeesList(newList)
+  }
+
+  // Calculate Verification Progress
+  const uploadedDocs = currentEmp.uploadedDocuments || {}
+  const mandatoryDocs = VERIFICATION_DOCUMENTS_LIST.filter(d => d.mandatory)
+  const uploadedMandatoryCount = mandatoryDocs.filter(d => uploadedDocs[d.id]?.fileUrl).length
+  const mandatoryProgressPct = Math.round((uploadedMandatoryCount / mandatoryDocs.length) * 100)
+
   return (
     <div className="space-y-6 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between">
+      {/* Top Navigation */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/employees">
@@ -62,38 +142,42 @@ export default function EmployeeProfilePage() {
           </Button>
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
-              <ShieldCheck className="h-3.5 w-3.5" /> Employee 360° Confidential Profile
+              <ShieldCheck className="h-3.5 w-3.5" /> Employee 360° Confidential Profile & Onboarding
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight text-foreground">
-              Profile: <span className="hero-gradient-text">{emp.name}</span>
+              Profile: <span className="hero-gradient-text">{currentEmp.name}</span>
             </h2>
           </div>
         </div>
 
-        {/* Edit Profile Modal Trigger - Allowed for Admin OR Account Owner */}
+        {/* Edit Profile Modal Trigger (Allowed for Admin OR Employee Self-Service) */}
         {canAccessConfidential && (
-          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <Dialog open={isEditOpen} onOpenChange={handleOpenEditDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-md shadow-primary/20">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md shadow-primary/20">
                 <Edit className="mr-2 h-4 w-4" /> Edit Profile Details
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Edit Confidential Master Profile</DialogTitle>
-                <DialogDescription>Update employee records for {emp.name} ({emp.id}). Access authorized for HR Admin & Employee.</DialogDescription>
+                <DialogTitle className="flex items-center gap-2 text-foreground font-extrabold">
+                  <Edit className="h-5 w-5 text-blue-500" /> Edit Employee Personal Profile & Records
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Update employee details for {currentEmp.name} ({currentEmp.id}). Employees can edit all personal and contact details.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
-                {/* Profile Picture Upload Section */}
+                {/* Profile Picture Section */}
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
                   <Label className="text-foreground font-bold flex items-center gap-2">
-                    <Camera className="h-4 w-4 text-blue-500" /> Profile Picture (Avatar)
+                    <Camera className="h-4 w-4 text-blue-500" /> Profile Picture Avatar
                   </Label>
                   <div className="flex flex-col sm:flex-row items-center gap-4">
                     <Avatar className="h-16 w-16 border-2 border-primary/40 shadow-sm">
-                      <AvatarImage src={formData.avatarUrl || `https://api.dicebear.com/9.x/notionists/svg?seed=${formData.name || emp.name}`} />
+                      <AvatarImage src={formData.avatarUrl || `https://api.dicebear.com/9.x/notionists/svg?seed=${formData.name || currentEmp.name}`} />
                       <AvatarFallback className="text-lg font-bold bg-primary text-primary-foreground">
-                        {(formData.name || emp.name)[0]}
+                        {(formData.name || currentEmp.name)[0]}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 space-y-2 w-full">
@@ -125,72 +209,51 @@ export default function EmployeeProfilePage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <Label>Full Name</Label>
+                    <Label className="font-bold">Full Name</Label>
                     <Input value={formData.name || ""} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
                   </div>
                   <div className="space-y-1">
-                    <Label>EMP_ID (Employee Code)</Label>
+                    <Label className="font-bold">Employee ID (EMP ID)</Label>
                     <Input 
                       value={formData.id || ""} 
                       onChange={e => setFormData({ ...formData, id: e.target.value })} 
                       disabled={!isAdmin} 
-                      className={!isAdmin ? "bg-muted" : "font-mono font-bold text-primary"} 
+                      className={!isAdmin ? "bg-muted cursor-not-allowed" : "font-mono font-bold text-primary"} 
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <Label>Joining Date</Label>
+                    <Label>Date of Joining</Label>
                     <Input 
                       value={formData.joinDate || ""} 
                       onChange={e => setFormData({ ...formData, joinDate: e.target.value })} 
                       disabled={!isAdmin} 
+                      className={!isAdmin ? "bg-muted cursor-not-allowed" : ""} 
                       placeholder="e.g. Jan 15, 2024" 
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <Label>Current Address</Label>
-                    <Input value={formData.address || ""} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Permanent Address</Label>
-                    <Input value={formData.permanentAddress || ""} onChange={e => setFormData({ ...formData, permanentAddress: e.target.value })} placeholder="" />
+                    <Label>Work Email</Label>
+                    <Input type="email" value={formData.email || ""} onChange={e => setFormData({ ...formData, email: e.target.value })} disabled={!isAdmin} className={!isAdmin ? "bg-muted cursor-not-allowed" : ""} />
                   </div>
 
                   <div className="space-y-1">
                     <Label>Primary Phone Number</Label>
-                    <Input value={formData.phone || ""} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="" />
+                    <Input value={formData.phone || ""} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="+91 98100 12345" />
                   </div>
                   <div className="space-y-1">
                     <Label>Emergency Contact Number</Label>
-                    <Input value={formData.emergencyPhone || ""} onChange={e => setFormData({ ...formData, emergencyPhone: e.target.value })} placeholder="" />
+                    <Input value={formData.emergencyPhone || ""} onChange={e => setFormData({ ...formData, emergencyPhone: e.target.value })} placeholder="+91 98351 23735" />
                   </div>
 
                   <div className="space-y-1">
-                    <Label>Personal Mail</Label>
-                    <Input type="email" value={formData.personalEmail || ""} onChange={e => setFormData({ ...formData, personalEmail: e.target.value })} placeholder="" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Govt ID Type</Label>
-                    <Select value={formData.govtIdType || ""} onValueChange={v => setFormData({ ...formData, govtIdType: v })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select ID Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Adhaar">Adhaar</SelectItem>
-                        <SelectItem value="PAN">PAN Card</SelectItem>
-                        <SelectItem value="Passport">Passport</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label>Govt ID Value</Label>
-                    <Input value={formData.govtIdValue || ""} onChange={e => setFormData({ ...formData, govtIdValue: e.target.value })} placeholder="" />
+                    <Label>Personal Email</Label>
+                    <Input type="email" value={formData.personalEmail || ""} onChange={e => setFormData({ ...formData, personalEmail: e.target.value })} placeholder="personal@example.com" />
                   </div>
                   <div className="space-y-1">
                     <Label>Marital Status</Label>
-                    <Select value={formData.maritalStatus || ""} onValueChange={v => setFormData({ ...formData, maritalStatus: v })}>
+                    <Select value={formData.maritalStatus || "Single"} onValueChange={v => setFormData({ ...formData, maritalStatus: v })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Status" />
                       </SelectTrigger>
@@ -203,45 +266,73 @@ export default function EmployeeProfilePage() {
                   </div>
 
                   <div className="space-y-1">
-                    <Label>Dependent Nominee Name</Label>
-                    <Input value={formData.dependentNominee || ""} onChange={e => setFormData({ ...formData, dependentNominee: e.target.value })} placeholder="" />
+                    <Label>Current / Local Address</Label>
+                    <Input value={formData.address || ""} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Flat, Street, City, Pincode" />
                   </div>
                   <div className="space-y-1">
-                    <Label>Dependent Nominee DOB</Label>
+                    <Label>Permanent Home Address</Label>
+                    <Input value={formData.permanentAddress || ""} onChange={e => setFormData({ ...formData, permanentAddress: e.target.value })} placeholder="Village/Town, District, State, Pincode" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Govt ID Type</Label>
+                    <Select value={formData.govtIdType || "Aadhaar"} onValueChange={v => setFormData({ ...formData, govtIdType: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select ID Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Aadhaar">Aadhaar</SelectItem>
+                        <SelectItem value="PAN">PAN Card</SelectItem>
+                        <SelectItem value="Passport">Passport</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Govt ID Number</Label>
+                    <Input value={formData.govtIdValue || ""} onChange={e => setFormData({ ...formData, govtIdValue: e.target.value })} placeholder="e.g. 5917 3041 2902" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Dependent Nominee Name</Label>
+                    <Input value={formData.dependentNominee || ""} onChange={e => setFormData({ ...formData, dependentNominee: e.target.value })} placeholder="Nominee Full Name" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Dependent Nominee Date of Birth</Label>
                     <Input type="date" value={formData.dependentNomineeDob || ""} onChange={e => setFormData({ ...formData, dependentNomineeDob: e.target.value })} />
                   </div>
 
                   <div className="space-y-1">
-                    <Label>Highest Qualification</Label>
-                    <Input value={formData.qualification || ""} onChange={e => setFormData({ ...formData, qualification: e.target.value })} placeholder="" />
+                    <Label>Highest Educational Qualification</Label>
+                    <Input value={formData.qualification || ""} onChange={e => setFormData({ ...formData, qualification: e.target.value })} placeholder="e.g. B.Tech / MBA / MCA" />
                   </div>
                   <div className="space-y-1">
-                    <Label>Score Card / Rating</Label>
-                    <Input value={formData.scoreCard || ""} onChange={e => setFormData({ ...formData, scoreCard: e.target.value })} placeholder="" />
+                    <Label>Score Card / Performance Rating</Label>
+                    <Input value={formData.scoreCard || ""} onChange={e => setFormData({ ...formData, scoreCard: e.target.value })} placeholder="e.g. 95/100 Rating" />
                   </div>
 
                   <div className="space-y-1">
-                    <Label>Medical Issues</Label>
-                    <Input value={formData.medicalIssues || ""} onChange={e => setFormData({ ...formData, medicalIssues: e.target.value })} placeholder="" />
+                    <Label>Medical Issues / Allergies</Label>
+                    <Input value={formData.medicalIssues || ""} onChange={e => setFormData({ ...formData, medicalIssues: e.target.value })} placeholder="None or details" />
                   </div>
                   <div className="space-y-1">
-                    <Label>Medication</Label>
-                    <Input value={formData.medication || ""} onChange={e => setFormData({ ...formData, medication: e.target.value })} placeholder="" />
+                    <Label>Medication / Daily Prescription</Label>
+                    <Input value={formData.medication || ""} onChange={e => setFormData({ ...formData, medication: e.target.value })} placeholder="None or details" />
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <Label>Medical History Notes</Label>
-                  <textarea className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={formData.medicalHistory || ""} onChange={e => setFormData({ ...formData, medicalHistory: e.target.value })} placeholder="" />
+                  <textarea 
+                    className="flex min-h-[70px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" 
+                    value={formData.medicalHistory || ""} 
+                    onChange={e => setFormData({ ...formData, medicalHistory: e.target.value })} 
+                    placeholder="Annual health checkup clear, no surgeries" 
+                  />
                 </div>
 
-                <div className="space-y-1">
-                  <Label>Documents & Verification Record Link</Label>
-                  <Input value={formData.documents || ""} onChange={e => setFormData({ ...formData, documents: e.target.value })} placeholder="" />
-                </div>
-
-                <Button type="submit" className="w-full bg-primary text-primary-foreground font-semibold">
-                  <Save className="mr-2 h-4 w-4" /> Save Profile Changes
+                <Button type="submit" className="w-full bg-primary text-primary-foreground font-bold">
+                  <Save className="mr-2 h-4 w-4" /> Save Profile Details
                 </Button>
               </form>
             </DialogContent>
@@ -249,16 +340,16 @@ export default function EmployeeProfilePage() {
         )}
       </div>
 
-      {/* Header Banner */}
+      {/* Header Profile Card */}
       <div className="overflow-hidden rounded-2xl border bg-card glass-card">
         <div className="h-32 bg-gradient-to-r from-blue-600 via-indigo-600 to-amber-500"></div>
         <div className="px-6 pb-6 pt-0 relative sm:flex sm:items-end sm:space-x-5">
           <div className="relative -mt-16 flex h-28 w-28 items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl group overflow-hidden">
             <Avatar className="h-full w-full">
-              <AvatarImage src={emp.avatarUrl || `https://api.dicebear.com/9.x/notionists/svg?seed=${emp.name}`} />
+              <AvatarImage src={currentEmp.avatarUrl || `https://api.dicebear.com/9.x/notionists/svg?seed=${currentEmp.name}`} />
               <AvatarFallback className="text-2xl font-bold bg-primary text-primary-foreground">
-                {emp.name.split(" ")[0]?.[0]}
-                {emp.name.split(" ")[1]?.[0]}
+                {currentEmp.name.split(" ")[0]?.[0]}
+                {currentEmp.name.split(" ")[1]?.[0]}
               </AvatarFallback>
             </Avatar>
 
@@ -275,52 +366,185 @@ export default function EmployeeProfilePage() {
           </div>
           <div className="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-extrabold text-foreground">{emp.name}</h1>
-              <p className="text-muted-foreground text-sm font-medium">{emp.role} • {emp.dept}</p>
+              <h1 className="text-2xl font-extrabold text-foreground">{currentEmp.name}</h1>
+              <p className="text-muted-foreground text-sm font-medium">{currentEmp.role} • {currentEmp.dept}</p>
             </div>
-            <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 px-4 py-1 text-xs">
-              {emp.status}
+            <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 px-4 py-1 text-xs font-bold">
+              {currentEmp.status}
             </Badge>
           </div>
         </div>
 
-        {/* Quick Info Bar */}
+        {/* Quick Info Summary Bar */}
         <div className="grid grid-cols-2 gap-4 border-t bg-muted/30 p-6 sm:grid-cols-4">
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase">Employee ID</p>
-            <p className="mt-1 font-bold text-foreground">{emp.id}</p>
+            <p className="mt-1 font-bold text-foreground font-mono">{currentEmp.id}</p>
           </div>
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase">Work Email</p>
-            <p className="mt-1 font-bold text-foreground">{emp.email}</p>
+            <p className="mt-1 font-bold text-foreground">{currentEmp.email}</p>
           </div>
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase">Department</p>
-            <p className="mt-1 font-bold text-foreground">{emp.dept}</p>
+            <p className="mt-1 font-bold text-foreground">{currentEmp.dept}</p>
           </div>
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase">Date of Joining</p>
-            <p className="mt-1 font-bold text-foreground">{emp.joinDate}</p>
+            <p className="mt-1 font-bold text-foreground">{currentEmp.joinDate}</p>
           </div>
         </div>
       </div>
 
+      {/* Verification Formalities Progress Banner */}
+      <Card className="glass-card border-blue-500/30">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base font-extrabold text-foreground flex items-center gap-2">
+                <FileCheck className="h-5 w-5 text-blue-500" /> Verification Documents & Onboarding Formalities
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                Mandatory document verification status for employee onboarding and compliance audit.
+              </CardDescription>
+            </div>
+            <Badge className={mandatoryProgressPct === 100 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-extrabold px-3.5 py-1 text-xs" : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-extrabold px-3.5 py-1 text-xs"}>
+              {uploadedMandatoryCount} / {mandatoryDocs.length} Mandatory Docs Uploaded ({mandatoryProgressPct}%)
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Progress value={mandatoryProgressPct} className="h-2.5 w-full bg-muted" />
+        </CardContent>
+      </Card>
+
       {/* Main Tabs */}
-      <Tabs defaultValue="confidential" className="w-full">
-        <TabsList className="bg-muted p-1">
-          <TabsTrigger value="confidential">Confidential Personal Record</TabsTrigger>
-          <TabsTrigger value="medical">Medical & Nominee Details</TabsTrigger>
-          <TabsTrigger value="qualification">Qualifications & Documents</TabsTrigger>
+      <Tabs defaultValue="documents" className="w-full space-y-4">
+        <TabsList className="bg-card border p-1 rounded-xl">
+          <TabsTrigger value="documents" className="font-bold flex items-center gap-1.5">
+            <Upload className="h-4 w-4 text-blue-500" /> Upload Verification Documents ({Object.keys(uploadedDocs).length} / 15)
+          </TabsTrigger>
+          <TabsTrigger value="confidential" className="font-bold">Confidential Personal Record</TabsTrigger>
+          <TabsTrigger value="medical" className="font-bold">Medical & Nominee Details</TabsTrigger>
+          <TabsTrigger value="qualification" className="font-bold">Educational Qualifications</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="confidential" className="space-y-4 pt-2">
+        {/* Tab 1: Upload Verification Documents (15 Required Items with Mandatory ** Tags) */}
+        <TabsContent value="documents" className="space-y-4">
+          <Card className="glass-card">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-lg font-extrabold text-foreground flex items-center gap-2">
+                    <FileCheck className="h-5 w-5 text-blue-500" /> Onboarding Formalities Document Repository
+                  </CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground mt-1">
+                    Kindly upload the following 15 documents for verification. Items marked with <span className="font-bold text-rose-500">**</span> are mandatory.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {VERIFICATION_DOCUMENTS_LIST.map((doc, idx) => {
+                const uploaded = uploadedDocs[doc.id]
+                return (
+                  <div key={doc.id} className="p-4 rounded-xl border bg-background/50 hover:bg-muted/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-muted-foreground font-mono">{idx + 1}.</span>
+                        <h4 className="font-extrabold text-foreground text-sm flex items-center gap-1.5">
+                          {doc.title}
+                          {doc.mandatory && (
+                            <span className="text-rose-500 font-extrabold text-sm" title="Mandatory Requirement">**</span>
+                          )}
+                        </h4>
+                        {doc.mandatory ? (
+                          <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-[10px] font-bold py-0 px-2">
+                            Mandatory**
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                            Optional
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{doc.description}</p>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      {uploaded ? (
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Uploaded
+                            </span>
+                            <span className="text-[10px] text-muted-foreground max-w-[150px] truncate" title={uploaded.fileName}>
+                              {uploaded.fileName}
+                            </span>
+                          </div>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs font-bold text-blue-600 hover:text-blue-700"
+                            onClick={() => setPreviewDocUrl({ name: uploaded.fileName, url: uploaded.fileUrl })}
+                          >
+                            <Eye className="mr-1 h-3.5 w-3.5" /> Preview
+                          </Button>
+
+                          {canAccessConfidential && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-500/10"
+                              title="Delete File"
+                              onClick={() => handleDeleteDoc(doc.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                            <AlertCircle className="h-3.5 w-3.5" /> Pending
+                          </span>
+
+                          {canAccessConfidential && (
+                            <label className="cursor-pointer">
+                              <Input
+                                type="file"
+                                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) handleFileUpload(doc.id, file)
+                                }}
+                              />
+                              <span className="inline-flex items-center justify-center rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-3 py-1.5 text-xs shadow-sm">
+                                <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload File
+                              </span>
+                            </label>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 2: Confidential Personal Record */}
+        <TabsContent value="confidential" className="space-y-4">
           {!canAccessConfidential ? (
             <Card className="glass-card border-rose-500/30 bg-rose-500/5">
               <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                 <Lock className="h-12 w-12 text-rose-500 mb-3" />
                 <h3 className="text-lg font-bold text-foreground">Confidential Employee Profile</h3>
                 <p className="text-sm text-muted-foreground mt-1 max-w-md">
-                  Personal address, government IDs, nominee details, and emergency contacts are restricted. Only the account owner ({emp.name}) and HR Admin can view this record.
+                  Personal address, government IDs, nominee details, and emergency contacts are restricted. Only the account owner ({currentEmp.name}) and HR Admin can view this record.
                 </p>
               </CardContent>
             </Card>
@@ -332,35 +556,35 @@ export default function EmployeeProfilePage() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Primary Address</p>
-                  <p className="font-bold text-foreground mt-0.5">{emp.address || "Not specified"}</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Current Address</p>
+                  <p className="font-bold text-foreground mt-0.5">{currentEmp.address || "Not specified"}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Permanent Address</p>
-                  <p className="font-bold text-foreground mt-0.5">{emp.permanentAddress || "Not specified"}</p>
+                  <p className="font-bold text-foreground mt-0.5">{currentEmp.permanentAddress || "Not specified"}</p>
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Primary Phone Number</p>
-                  <p className="font-bold text-foreground mt-0.5">{emp.phone || "Not specified"}</p>
+                  <p className="font-bold text-foreground mt-0.5">{currentEmp.phone || "Not specified"}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Emergency Contact Number</p>
-                  <p className="font-bold text-foreground mt-0.5">{emp.emergencyPhone || "Not specified"}</p>
+                  <p className="font-bold text-foreground mt-0.5">{currentEmp.emergencyPhone || "Not specified"}</p>
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Personal Email</p>
-                  <p className="font-bold text-foreground mt-0.5">{emp.personalEmail || "Not specified"}</p>
+                  <p className="font-bold text-foreground mt-0.5">{currentEmp.personalEmail || "Not specified"}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Marital Status</p>
-                  <p className="font-bold text-foreground mt-0.5">{emp.maritalStatus || "Single"}</p>
+                  <p className="font-bold text-foreground mt-0.5">{currentEmp.maritalStatus || "Single"}</p>
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Govt ID Type & Value</p>
-                  <p className="font-bold text-foreground mt-0.5">{emp.govtIdType || "Adhaar"}: {emp.govtIdValue || "Not specified"}</p>
+                  <p className="font-bold text-foreground mt-0.5">{currentEmp.govtIdType || "Adhaar"}: {currentEmp.govtIdValue || "Not specified"}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Account Status</p>
@@ -371,14 +595,15 @@ export default function EmployeeProfilePage() {
           )}
         </TabsContent>
 
-        <TabsContent value="medical" className="space-y-4 pt-2">
+        {/* Tab 3: Medical & Nominee Details */}
+        <TabsContent value="medical" className="space-y-4">
           {!canAccessConfidential ? (
             <Card className="glass-card border-rose-500/30 bg-rose-500/5">
               <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                 <Lock className="h-12 w-12 text-rose-500 mb-3" />
                 <h3 className="text-lg font-bold text-foreground">Restricted Medical & Family Data</h3>
                 <p className="text-sm text-muted-foreground mt-1 max-w-md">
-                  Nominee details and medical history are protected under HIPAA/GDPR privacy rules.
+                  Nominee details and medical history are protected under privacy guidelines.
                 </p>
               </CardContent>
             </Card>
@@ -390,54 +615,81 @@ export default function EmployeeProfilePage() {
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Dependent Nominee Name</p>
-                  <p className="font-bold text-foreground mt-0.5">{emp.dependentNominee || "Not specified"}</p>
+                  <p className="font-bold text-foreground mt-0.5">{currentEmp.dependentNominee || "Not specified"}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Nominee DOB</p>
-                  <p className="font-bold text-foreground mt-0.5">{emp.dependentNomineeDob || "Not specified"}</p>
+                  <p className="font-bold text-foreground mt-0.5">{currentEmp.dependentNomineeDob || "Not specified"}</p>
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Medical Issues</p>
-                  <p className="font-bold text-foreground mt-0.5">{emp.medicalIssues || "None"}</p>
+                  <p className="font-bold text-foreground mt-0.5">{currentEmp.medicalIssues || "None"}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Medication</p>
-                  <p className="font-bold text-foreground mt-0.5">{emp.medication || "None"}</p>
+                  <p className="font-bold text-foreground mt-0.5">{currentEmp.medication || "None"}</p>
                 </div>
 
                 <div className="md:col-span-2">
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Medical History Notes</p>
-                  <p className="font-medium text-foreground mt-1 p-3 border rounded-xl bg-muted/20">{emp.medicalHistory || "No surgeries or chronic conditions recorded."}</p>
+                  <p className="font-medium text-foreground mt-1 p-3 border rounded-xl bg-muted/20">{currentEmp.medicalHistory || "No surgeries or chronic conditions recorded."}</p>
                 </div>
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
-        <TabsContent value="qualification" className="space-y-4 pt-2">
+        {/* Tab 4: Educational Qualifications */}
+        <TabsContent value="qualification" className="space-y-4">
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">Qualifications & Document Verification</CardTitle>
+              <CardTitle className="text-lg font-bold text-foreground">Educational Qualifications & Scorecards</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase">Highest Qualification</p>
-                <p className="font-bold text-foreground mt-0.5">{emp.qualification || "B.Tech Computer Science"}</p>
+                <p className="font-bold text-foreground mt-0.5">{currentEmp.qualification || "B.Tech Computer Science"}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase">Score Card / Rating</p>
-                <p className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{emp.scoreCard || "Performance Rating (95/100)"}</p>
-              </div>
-
-              <div className="md:col-span-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Verification Records & Documents</p>
-                <p className="font-medium text-foreground mt-1 p-3 border rounded-xl bg-muted/20">{emp.documents || "Verified Records On File"}</p>
+                <p className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{currentEmp.scoreCard || "Performance Rating (95/100)"}</p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Document Preview Modal */}
+      {previewDocUrl && (
+        <Dialog open={!!previewDocUrl} onOpenChange={() => setPreviewDocUrl(null)}>
+          <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 font-bold">
+                <FileText className="h-5 w-5 text-blue-500" /> Document Preview: {previewDocUrl.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-auto p-4 border rounded-xl bg-muted/20 min-h-[300px] flex items-center justify-center">
+              {previewDocUrl.url.startsWith("data:image/") ? (
+                <img src={previewDocUrl.url} alt={previewDocUrl.name} className="max-h-[450px] object-contain rounded-lg shadow-md" />
+              ) : (
+                <div className="text-center space-y-3">
+                  <FileText className="h-16 w-16 text-blue-500 mx-auto" />
+                  <p className="text-sm font-bold">{previewDocUrl.name}</p>
+                  <p className="text-xs text-muted-foreground">Document file loaded. Click below to download or view in browser.</p>
+                  <a 
+                    href={previewDocUrl.url} 
+                    download={previewDocUrl.name} 
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-md"
+                  >
+                    <Download className="h-4 w-4" /> Download File
+                  </a>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
