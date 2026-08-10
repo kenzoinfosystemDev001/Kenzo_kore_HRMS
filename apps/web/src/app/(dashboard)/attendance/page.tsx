@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Clock, CheckCircle2, AlertCircle, XCircle, Download, UserCheck, ShieldAlert, Sparkles, FileText, Calendar as CalendarIcon, Lock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,18 @@ import {
 
 export default function AttendancePage() {
   const { user, isAdmin } = useAuth()
+
+  // Real-Time Live Clock (Ticks every 1 second)
+  const [liveTime, setLiveTime] = useState<string>("")
+
+  useEffect(() => {
+    const updateTime = () => {
+      setLiveTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }))
+    }
+    updateTime()
+    const timer = setInterval(updateTime, 1000)
+    return () => clearInterval(timer)
+  }, [])
   
   const todayStr = new Date().toISOString().split("T")[0]
   const [selectedDate, setSelectedDate] = useState<string>(todayStr)
@@ -185,7 +197,7 @@ export default function AttendancePage() {
             ) : (
               <>
                 <Clock className="mr-2 h-4 w-4 animate-spin-slow" /> 
-                {isMyClockedIn ? `Clock Out (${myRecord?.checkIn})` : "Clock In Now"}
+                {isMyClockedIn ? `Clock Out (${liveTime || "Live"})` : `Clock In (${liveTime || "Live"})`}
               </>
             )}
           </Button>

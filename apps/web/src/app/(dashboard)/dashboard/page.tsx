@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
   Users,
@@ -52,6 +52,18 @@ const COLORS = ["#3B82F6", "#6366F1", "#EC4899", "#8B5CF6", "#10B981", "#F59E0B"
 
 export default function DashboardPage() {
   const { user, isAdmin } = useAuth()
+
+  // Real-Time Live Clock (Ticks every 1 second)
+  const [liveTime, setLiveTime] = useState<string>("")
+
+  useEffect(() => {
+    const updateTime = () => {
+      setLiveTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }))
+    }
+    updateTime()
+    const timer = setInterval(updateTime, 1000)
+    return () => clearInterval(timer)
+  }, [])
   const [employees] = useState<EmployeeRecord[]>(() => getStoredEmployees())
   const [leaves, setLeaves] = useState<LeaveRequestRecord[]>(() => getStoredLeaves())
   const [payslips] = useState<PayslipRecord[]>(() => getStoredPayslips())
@@ -270,7 +282,7 @@ export default function DashboardPage() {
                 onClick={handleClockToggle}
                 className={`w-full font-bold shadow-md ${isCheckedIn ? "bg-rose-600 hover:bg-rose-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}`}
               >
-                {isCheckedIn ? "Clock Out Now" : "Mark Current Day Attendance (Clock In)"}
+                {isCheckedIn ? `Clock Out (${liveTime || "Live"})` : `Clock In (${liveTime || "Live"})`}
               </Button>
             </CardContent>
           </Card>
