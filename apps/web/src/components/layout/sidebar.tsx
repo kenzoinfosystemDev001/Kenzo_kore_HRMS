@@ -14,7 +14,6 @@ import {
   Wallet,
   Receipt,
   UserPlus,
-  Briefcase,
   TrendingUp,
   GraduationCap,
   Laptop,
@@ -52,7 +51,6 @@ const navGroups = [
     title: "TALENT",
     items: [
       { title: "Recruitment", href: "/recruitment", icon: UserPlus },
-      { title: "Onboarding", href: "/onboarding", icon: Briefcase },
       { title: "Performance", href: "/performance", icon: TrendingUp },
       { title: "Training & LMS", href: "/training", icon: GraduationCap },
     ],

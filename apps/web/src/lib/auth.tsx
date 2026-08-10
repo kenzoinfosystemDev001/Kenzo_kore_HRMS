@@ -39,7 +39,6 @@ export const ADMIN_ONLY_ROUTES = [
   "/employees",
   "/organization",
   "/recruitment",
-  "/onboarding",
   "/reports",
   "/settings",
   "/integrations",
