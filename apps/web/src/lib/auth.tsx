@@ -248,7 +248,7 @@ interface ApiProfileResponse {
         }
       }
       
-      // 3. Keep static USER_DB as ultimate fallback for admin testing if API is down
+      // 3. Keep static USER_DB as fallback for offline testing if API server is unreachable
       const hardcodedDB: Record<string, { password: string; user: AuthUser }> = {
         "ankit.sethi@kenzoinfosystems.com": {
           password: "kenzo123",
@@ -272,6 +272,42 @@ interface ApiProfileResponse {
             initials: "SK",
             department: "Engineering",
             designation: "Software Engineer",
+          },
+        },
+        "chanchal.saini@kenzoinfosystems.com": {
+          password: "kenzo123",
+          user: {
+            id: "EMP-1003",
+            name: "Chanchal Saini",
+            email: "Chanchal.saini@kenzoinfosystems.com",
+            role: "admin",
+            initials: "CS",
+            department: "Administration",
+            designation: "Managing Director",
+          },
+        },
+        "jitender.saini@kenzoinfosystems.com": {
+          password: "kenzo123",
+          user: {
+            id: "EMP-1004",
+            name: "Jitender Saini",
+            email: "Jitender.saini@kenzoinfosystems.com",
+            role: "admin",
+            initials: "JS",
+            department: "Administration",
+            designation: "CEO",
+          },
+        },
+        "laxminarayan.ojha@kenzoinfosystems.com": {
+          password: "kenzo123",
+          user: {
+            id: "EMP-1005",
+            name: "Laxmi Narayan",
+            email: "Laxminarayan.ojha@kenzoinfosystems.com",
+            role: "employee",
+            initials: "LN",
+            department: "Sales",
+            designation: "Field Sales Executive",
           },
         },
       }

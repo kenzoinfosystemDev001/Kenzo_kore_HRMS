@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -9,97 +9,127 @@ export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, createEmployeeDto: CreateEmployeeDto) {
-    const { firstName, lastName, email, password, phone, departmentId, designationId, branchId, employeeCode, dateOfJoining, employmentType, systemRole } = createEmployeeDto;
+    const { 
+      firstName, 
+      lastName, 
+      email, 
+      password, 
+      phone, 
+      departmentId, 
+      designationId, 
+      branchId, 
+      employeeCode, 
+      dateOfJoining, 
+      employmentType, 
+      systemRole 
+    } = createEmployeeDto;
 
-    const pwd = password || 'Emp@123';
-    const passwordHash = await bcrypt.hash(pwd, 10);
+    const normalizedEmail = email ? email.toLowerCase().trim() : '';
 
-    const orgId = await this.getOrgId(tenantId);
+    if (!normalizedEmail) {
+      throw new ConflictException('Work email address is required');
+    }
 
-    // 1. Create Employee Record in PostgreSQL
-    const employee = await this.prisma.employee.create({
-      data: {
-        tenantId,
-        organizationId: orgId,
-        employeeCode: employeeCode || `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
-        firstName,
-        lastName,
-        workEmail: email,
-        employmentStatus: employmentType || 'active',
-        dateOfJoining: dateOfJoining ? new Date(dateOfJoining) : new Date(),
-        phone,
-        departmentId,
-        designationId,
-        branchId,
-      },
-    });
-
-    // 2. Create User Account in PostgreSQL users table with explicit Role Assignment
-    if (email) {
-      const existingUser = await this.prisma.user.findFirst({
-        where: { tenantId, email: email.toLowerCase().trim() },
+    // Use atomic Prisma transaction so database write is all-or-nothing
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Check duplicate email in PostgreSQL
+      const existingUser = await tx.user.findFirst({
+        where: { tenantId, email: normalizedEmail },
       });
 
-      if (!existingUser) {
-        // Map systemRole options: Employee, Super_admin, Admin, HR
-        let targetSlug = 'employee';
-        let targetName = 'Employee';
+      if (existingUser) {
+        throw new ConflictException('An account with this email address already exists in database');
+      }
 
-        if (systemRole === 'Super_admin' || systemRole === 'super-admin') {
-          targetSlug = 'super-admin';
-          targetName = 'Super_admin';
-        } else if (systemRole === 'Admin' || systemRole === 'admin') {
-          targetSlug = 'admin';
-          targetName = 'Admin';
-        } else if (systemRole === 'HR' || systemRole === 'hr' || systemRole === 'hr-manager') {
-          targetSlug = 'hr';
-          targetName = 'HR';
-        }
+      // 2. Securely hash password using bcrypt
+      const pwd = password || 'kenzo123';
+      const passwordHash = await bcrypt.hash(pwd, 10);
 
-        let roleRecord = await this.prisma.role.findFirst({
-          where: { tenantId, slug: targetSlug },
+      // 3. Resolve Organization
+      let org = await tx.organization.findFirst({ where: { tenantId } });
+      if (!org) {
+        org = await tx.organization.create({
+          data: { tenantId, name: 'Kenzo Infosystems Pvt. Ltd.' },
         });
+      }
 
-        if (!roleRecord) {
-          roleRecord = await this.prisma.role.create({
-            data: {
-              tenantId,
-              name: targetName,
-              slug: targetSlug,
-              isSystemRole: true,
-            },
-          });
-        }
+      // 4. Create Employee Record in PostgreSQL
+      const employee = await tx.employee.create({
+        data: {
+          tenantId,
+          organizationId: org.id,
+          employeeCode: employeeCode || `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
+          firstName,
+          lastName,
+          workEmail: normalizedEmail,
+          employmentStatus: employmentType || 'active',
+          dateOfJoining: dateOfJoining ? new Date(dateOfJoining) : new Date(),
+          phone,
+          departmentId,
+          designationId,
+          branchId,
+        },
+      });
 
-        await this.prisma.user.create({
+      // 5. Map Role & Create User Account in PostgreSQL
+      let targetSlug = 'employee';
+      let targetName = 'Employee';
+
+      if (systemRole === 'Super_admin' || systemRole === 'super-admin') {
+        targetSlug = 'super-admin';
+        targetName = 'Super_admin';
+      } else if (systemRole === 'Admin' || systemRole === 'admin') {
+        targetSlug = 'admin';
+        targetName = 'Admin';
+      } else if (systemRole === 'HR' || systemRole === 'hr' || systemRole === 'hr-manager') {
+        targetSlug = 'hr';
+        targetName = 'HR';
+      }
+
+      let roleRecord = await tx.role.findFirst({
+        where: { tenantId, slug: targetSlug },
+      });
+
+      if (!roleRecord) {
+        roleRecord = await tx.role.create({
           data: {
             tenantId,
-            email: email.toLowerCase().trim(),
-            passwordHash,
-            firstName,
-            lastName,
-            emailVerified: true,
-            employeeId: employee.id,
-            userRoles: roleRecord
-              ? {
-                  create: [{ roleId: roleRecord.id }],
-                }
-              : undefined,
+            name: targetName,
+            slug: targetSlug,
+            isSystemRole: true,
           },
         });
       }
-    }
 
-    return employee;
-  }
+      const user = await tx.user.create({
+        data: {
+          tenantId,
+          email: normalizedEmail,
+          passwordHash,
+          firstName,
+          lastName,
+          emailVerified: true,
+          employeeId: employee.id,
+          userRoles: {
+            create: [{ roleId: roleRecord.id }],
+          },
+        },
+      });
 
-  private async getOrgId(tenantId: string): Promise<string> {
-    const org = await this.prisma.organization.findFirst({ where: { tenantId } });
-    if (org) return org.id;
-    const newOrg = await this.prisma.organization.create({
-      data: { tenantId, name: 'Kenzo Technologies Inc.' },
+      // 6. Audit Log Entry
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          userId: user.id,
+          action: 'EMPLOYEE_CREATED',
+          entityType: 'Employee',
+          entityId: employee.id,
+          metadata: { createdBy: 'Admin', email: normalizedEmail, role: targetName },
+        },
+      });
+
+      return { ...employee, user };
     });
-    return newOrg.id;
   }
 
   async findAll(tenantId: string) {

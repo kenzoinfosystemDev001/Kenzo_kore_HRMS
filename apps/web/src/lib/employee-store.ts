@@ -96,10 +96,6 @@ export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
     uploadedDocuments: {
       aadhaar_card: { fileName: "Aadhaar_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
       pan_card: { fileName: "PAN_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
-      perm_address_proof: { fileName: "Passport_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
-      class_10th_cert: { fileName: "Class10_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
-      class_12th_cert: { fileName: "Class12_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
-      grad_marksheet: { fileName: "Degree_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
     },
   },
   {
@@ -131,11 +127,55 @@ export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
     uploadedDocuments: {
       aadhaar_card: { fileName: "Aadhaar_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
       pan_card: { fileName: "PAN_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
-      perm_address_proof: { fileName: "VoterID_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
-      class_10th_cert: { fileName: "Class10_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
-      class_12th_cert: { fileName: "Class12_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
-      grad_marksheet: { fileName: "BTech_Marksheet_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
     },
+  },
+  {
+    id: "EMP-1003",
+    name: "Chanchal Saini",
+    email: "Chanchal.saini@kenzoinfosystems.com",
+    password: "kenzo123",
+    role: "Managing Director",
+    systemRole: "Admin",
+    dept: "Administration",
+    status: "Active",
+    joinDate: "Aug 07, 2026",
+    phone: "+91 98100 99887",
+    address: "Mayur Vihar Phase 1, New Delhi",
+    permanentAddress: "New Delhi 110091",
+    govtIdType: "Aadhaar",
+    govtIdValue: "8899 1122 3344",
+  },
+  {
+    id: "EMP-1004",
+    name: "Jitender Saini",
+    email: "Jitender.saini@kenzoinfosystems.com",
+    password: "kenzo123",
+    role: "CEO",
+    systemRole: "Super_admin",
+    dept: "Administration",
+    status: "Active",
+    joinDate: "Aug 07, 2026",
+    phone: "+91 98100 77665",
+    address: "Mayur Vihar Phase 1, New Delhi",
+    permanentAddress: "New Delhi 110091",
+    govtIdType: "Aadhaar",
+    govtIdValue: "7788 2233 4455",
+  },
+  {
+    id: "EMP-1005",
+    name: "Laxmi Narayan",
+    email: "Laxminarayan.ojha@kenzoinfosystems.com",
+    password: "kenzo123",
+    role: "Field Sales Executive",
+    systemRole: "Employee",
+    dept: "Sales",
+    status: "Active",
+    joinDate: "Aug 06, 2026",
+    phone: "+91 98100 33221",
+    address: "Sector 18, Noida",
+    permanentAddress: "Noida UP 201301",
+    govtIdType: "Aadhaar",
+    govtIdValue: "3344 5566 7788",
   },
 ]
 
@@ -145,7 +185,7 @@ export function getStoredEmployees(): EmployeeRecord[] {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as EmployeeRecord[]
-      if (parsed && parsed.length > 0 && parsed.some(e => e.email.toLowerCase() === "ankit.sethi@kenzoinfosystems.com")) return parsed
+      if (parsed && parsed.length > 0 && parsed.some(e => e.email.toLowerCase() === "chanchal.saini@kenzoinfosystems.com")) return parsed
     }
   } catch {
     // Fallback

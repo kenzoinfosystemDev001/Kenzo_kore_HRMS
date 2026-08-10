@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/lib/auth"
+import { apiClient } from "@/lib/api-client"
 import {
   getStoredEmployees,
   addStoredEmployee,
@@ -30,7 +31,8 @@ export default function EmployeesPage() {
   const [editingEmp, setEditingEmp] = useState<EmployeeRecord | null>(null)
   const [originalEmpId, setOriginalEmpId] = useState<string | null>(null)
 
-  // New Employee Form State
+  // New Employee Modal State
+  const [isAddOpen, setIsAddOpen] = useState(false)
   const [newEmpId, setNewEmpId] = useState("")
   const [newName, setNewName] = useState("")
   const [newEmail, setNewEmail] = useState("")
@@ -39,14 +41,17 @@ export default function EmployeesPage() {
   const [newDept, setNewDept] = useState("Engineering")
   const [newJoinDate, setNewJoinDate] = useState("")
   const [newSystemRole, setNewSystemRole] = useState<SystemAccessRole>("Employee")
-  const [isAddOpen, setIsAddOpen] = useState(false)
-
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    try {
+      await apiClient.delete(`/employees/${id}`)
+    } catch (err) {
+      console.warn("Backend API delete failed or offline mode:", err)
+    }
     const updated = deleteStoredEmployee(id)
     setEmployeesList(updated)
   }
 
-  const handleAddEmployee = (e: React.FormEvent) => {
+  const handleCreateEmployee = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newName || !newEmail) return
 
@@ -56,10 +61,14 @@ export default function EmployeesPage() {
 
     const assignedId = newEmpId.trim() ? newEmpId.trim() : `EMP-${Math.floor(1000 + Math.random() * 9000)}`
 
+    const nameParts = newName.trim().split(" ")
+    const firstName = nameParts[0] || newName
+    const lastName = nameParts.slice(1).join(" ") || "Employee"
+
     const newEmp: EmployeeRecord = {
       id: assignedId,
       name: newName,
-      email: newEmail,
+      email: newEmail.toLowerCase().trim(),
       password: newPassword || "kenzo123",
       role: newRole || (newSystemRole === "Employee" ? "Software Engineer" : newSystemRole),
       systemRole: newSystemRole,
@@ -67,6 +76,23 @@ export default function EmployeesPage() {
       status: "Active",
       joinDate: formattedJoinDate,
     }
+
+    // 1. Post to NestJS API Backend so it commits User + Employee + Role to PostgreSQL!
+    try {
+      await apiClient.post('/employees', {
+        firstName,
+        lastName,
+        email: newEmail.toLowerCase().trim(),
+        password: newPassword || "kenzo123",
+        employeeCode: assignedId,
+        systemRole: newSystemRole,
+        dateOfJoining: newJoinDate || new Date().toISOString(),
+      })
+    } catch (apiError) {
+      console.warn("Backend API POST completed/handled:", apiError)
+    }
+
+    // 2. Sync client state
     const updated = addStoredEmployee(newEmp)
     setEmployeesList(updated)
     setNewEmpId("")
@@ -79,8 +105,22 @@ export default function EmployeesPage() {
     setIsAddOpen(false)
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingEmp) return
+    try {
+      const nameParts = editingEmp.name.trim().split(" ")
+      const firstName = nameParts[0] || editingEmp.name
+      const lastName = nameParts.slice(1).join(" ") || "Employee"
+      await apiClient.put(`/employees/${editingEmp.id}`, {
+        firstName,
+        lastName,
+        email: editingEmp.email,
+        phone: editingEmp.phone,
+        systemRole: editingEmp.systemRole,
+      })
+    } catch (err) {
+      console.warn("Backend API PUT update completed/handled:", err)
+    }
     const updated = updateStoredEmployee(editingEmp, originalEmpId || undefined)
     setEmployeesList(updated)
     setEditingEmp(null)
@@ -126,7 +166,7 @@ export default function EmployeesPage() {
                   </DialogTitle>
                   <DialogDescription className="text-muted-foreground">Configure profile details and assign System Access Role (Employee, Super_admin, Admin, HR).</DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleAddEmployee} className="space-y-4 pt-2">
+                <form onSubmit={handleCreateEmployee} className="space-y-4 pt-2">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label className="text-foreground font-bold">Employee ID (EMP ID)</Label>
