@@ -39,7 +39,7 @@ export const DEFAULT_PAYSLIPS: PayslipRecord[] = [
   {
     id: "PAY-2026-0802",
     employeeName: "Ankit Sethi",
-    employeeEmail: "admin@kenzo.com",
+    employeeEmail: "Ankit.sethi@kenzoinfosystems.com",
     month: "July 2026",
     gross: "₹4,50,000",
     deductions: "₹45,000",

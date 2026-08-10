@@ -1,13 +1,13 @@
 export const statCards = [
   {
     title: "Total Employees",
-    value: "2",
+    value: "5",
     change: "Active workforce",
-    trend: "neutral",
+    trend: "up",
   },
   {
     title: "Present Today",
-    value: "2",
+    value: "5",
     change: "100% attendance",
     trend: "up",
   },
@@ -19,24 +19,24 @@ export const statCards = [
   },
   {
     title: "Pending Requests",
-    value: "0",
-    change: "No pending",
+    value: "1",
+    change: "Personal leave request",
     trend: "neutral",
   },
   {
     title: "Projects Active",
-    value: "1",
-    change: "Kenzo HRMS",
+    value: "3",
+    change: "Kenzo Enterprise HRMS",
     trend: "up",
   },
 ]
 
 export const attendanceData = [
-  { name: "Mon", present: 2, absent: 0, late: 0 },
-  { name: "Tue", present: 2, absent: 0, late: 0 },
-  { name: "Wed", present: 2, absent: 0, late: 0 },
-  { name: "Thu", present: 2, absent: 0, late: 0 },
-  { name: "Fri", present: 2, absent: 0, late: 0 },
+  { name: "Mon", present: 5, absent: 0, late: 0 },
+  { name: "Tue", present: 5, absent: 0, late: 0 },
+  { name: "Wed", present: 5, absent: 0, late: 0 },
+  { name: "Thu", present: 5, absent: 0, late: 0 },
+  { name: "Fri", present: 5, absent: 0, late: 0 },
 ]
 
 export const leaveRequests = [
@@ -57,8 +57,10 @@ export const upcomingEvents = [
 ]
 
 export const departmentData = [
-  { name: "Management", value: 1 },
-  { name: "Engineering", value: 1 },
+  { name: "Executive Management", value: 1 },
+  { name: "Engineering & Technology", value: 1 },
+  { name: "Administration", value: 2 },
+  { name: "Sales & Field Services", value: 1 },
 ]
 
 export const aiInsights = [
@@ -71,7 +73,7 @@ export const aiInsights = [
   {
     id: 2,
     title: "Compliance Status",
-    desc: "All documents up to date",
+    desc: "15-Document Verification System Active",
     color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
   },
 ]
@@ -79,8 +81,20 @@ export const aiInsights = [
 export const recentHires = [
   {
     id: 1,
-    name: "Sujal Kumar",
-    role: "Software Architect",
-    date: "Active Employee",
+    name: "Chanchal Saini",
+    role: "Managing Director",
+    date: "Aug 07, 2026",
+  },
+  {
+    id: 2,
+    name: "Jitender Saini",
+    role: "CEO",
+    date: "Aug 07, 2026",
+  },
+  {
+    id: 3,
+    name: "Laxmi Narayan",
+    role: "Field Sales Executive",
+    date: "Aug 06, 2026",
   },
 ]
