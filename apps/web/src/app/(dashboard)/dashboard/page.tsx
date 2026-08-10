@@ -42,6 +42,7 @@ import { useAuth } from "@/lib/auth"
 import { getStoredEmployees, EmployeeRecord } from "@/lib/employee-store"
 import { getStoredLeaves, updateLeaveStatus, addLeaveRequest, deleteLeaveRequest, LeaveRequestRecord } from "@/lib/leave-store"
 import { getStoredPayslips, PayslipRecord } from "@/lib/payslip-store"
+import { getNotificationsForUser, markNotificationAsRead, addTargetNotification, UserNotification } from "@/lib/notification-store"
 
 import {
   attendanceData,
@@ -54,6 +55,7 @@ export default function DashboardPage() {
   const [employees] = useState<EmployeeRecord[]>(() => getStoredEmployees())
   const [leaves, setLeaves] = useState<LeaveRequestRecord[]>(() => getStoredLeaves())
   const [payslips] = useState<PayslipRecord[]>(() => getStoredPayslips())
+  const [dismissedNotifIds, setDismissedNotifIds] = useState<string[]>([])
 
   // Calculate dynamic department headcount from live stored employees
   const dynamicDepartmentData = useMemo(() => {
@@ -87,14 +89,43 @@ export default function DashboardPage() {
   const myLeavesList = leaves.filter(l => l.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
   const myPayslipsList = payslips.filter(p => p.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
 
+  // Employee notifications
+  const employeeUnreadNotifs: UserNotification[] = (user?.email
+    ? getNotificationsForUser(user.email).filter(n => !n.isRead && !dismissedNotifIds.includes(n.id))
+    : [])
+
   const handleApprove = (id: string) => {
+    const target = leaves.find(l => l.id === id)
     const updated = updateLeaveStatus(id, "Approved")
     setLeaves(updated)
+
+    if (target) {
+      addTargetNotification({
+        targetEmail: target.employeeEmail.toLowerCase(),
+        title: "🎉 Leave Application Approved!",
+        message: `Your ${target.leaveType} application (${target.startDate} to ${target.endDate}) has been APPROVED by Admin.`,
+        type: "LEAVE",
+        date: new Date().toLocaleDateString(),
+        isRead: false,
+      })
+    }
   }
 
   const handleReject = (id: string) => {
+    const target = leaves.find(l => l.id === id)
     const updated = updateLeaveStatus(id, "Rejected")
     setLeaves(updated)
+
+    if (target) {
+      addTargetNotification({
+        targetEmail: target.employeeEmail.toLowerCase(),
+        title: "❌ Leave Application Update",
+        message: `Your ${target.leaveType} application (${target.startDate} to ${target.endDate}) was rejected by Admin.`,
+        type: "LEAVE",
+        date: new Date().toLocaleDateString(),
+        isRead: false,
+      })
+    }
   }
 
   const handleDeleteLeave = (id: string) => {
@@ -166,7 +197,37 @@ export default function DashboardPage() {
   if (!isAdmin) {
     return (
       <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-        {/* Employee Header */}
+        {/* Live Admin Approval Pop-Up Notification Alert Banner */}
+        {employeeUnreadNotifs.length > 0 && (
+          <div className="space-y-3">
+            {employeeUnreadNotifs.map((notif) => (
+              <div key={notif.id} className="rounded-2xl border-2 border-emerald-500/50 bg-gradient-to-r from-emerald-950/90 via-background to-blue-950/90 p-5 shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-4 duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="h-11 w-11 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                    <Sparkles className="h-6 w-6 animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-extrabold text-foreground flex items-center gap-2">
+                      {notif.title}
+                      <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] font-bold">Admin Status Update</Badge>
+                    </h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">{notif.message}</p>
+                  </div>
+                </div>
+                <Button 
+                  size="sm" 
+                  onClick={() => {
+                    markNotificationAsRead(notif.id)
+                    setDismissedNotifIds(prev => [...prev, notif.id])
+                  }} 
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shrink-0"
+                >
+                  Acknowledge & Dismiss
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5 border-border">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2">

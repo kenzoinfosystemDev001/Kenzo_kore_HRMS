@@ -24,6 +24,7 @@ import {
   AppraisalRequestRecord,
   OKRRecord,
 } from "@/lib/performance-store"
+import { addTargetNotification } from "@/lib/notification-store"
 
 export default function PerformancePage() {
   const { user, isAdmin } = useAuth()
@@ -91,13 +92,37 @@ export default function PerformancePage() {
   }
 
   const handleApproveAppraisal = (id: string) => {
+    const target = appraisals.find(a => a.id === id)
     const updated = updateAppraisalStatus(id, "Approved", "Approved by Executive HR Management.")
     setAppraisals(updated)
+
+    if (target) {
+      addTargetNotification({
+        targetEmail: target.employeeEmail.toLowerCase(),
+        title: "🌟 Appraisal & Promotion Approved!",
+        message: `Congratulations! Your appraisal request (${target.id}) to ${target.requestedRole} (${target.requestedSalary}) has been APPROVED by HR Management!`,
+        type: "APPRAISAL",
+        date: new Date().toLocaleDateString(),
+        isRead: false,
+      })
+    }
   }
 
   const handleRejectAppraisal = (id: string) => {
+    const target = appraisals.find(a => a.id === id)
     const updated = updateAppraisalStatus(id, "Rejected", "Cycle feedback recorded.")
     setAppraisals(updated)
+
+    if (target) {
+      addTargetNotification({
+        targetEmail: target.employeeEmail.toLowerCase(),
+        title: "📋 Appraisal Request Update",
+        message: `Your appraisal request (${target.id}) for ${target.requestedRole} was reviewed by HR Management.`,
+        type: "APPRAISAL",
+        date: new Date().toLocaleDateString(),
+        isRead: false,
+      })
+    }
   }
 
   const handleDeleteAppraisal = (id: string) => {
@@ -193,46 +218,48 @@ export default function PerformancePage() {
             </DialogContent>
           </Dialog>
 
-          {/* Create Goal (OKR) Modal CTA */}
-          <Dialog open={isOkrOpen} onOpenChange={setIsOkrOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md shadow-primary/20">
-                <Plus className="mr-2 h-4 w-4" /> Create Goal (OKR)
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Define Objective & Key Result (OKR)</DialogTitle>
-                <DialogDescription>Create a strategic target for the current quarter.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleOkrSubmit} className="space-y-4 pt-2">
-                <div className="space-y-1">
-                  <Label>Objective Title</Label>
-                  <Input value={okrTitle} onChange={e => setOkrTitle(e.target.value)} placeholder="e.g. Optimize platform latency below 100ms" required />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+          {/* Create Goal (OKR) Modal CTA (Admin Only!) */}
+          {isAdmin && (
+            <Dialog open={isOkrOpen} onOpenChange={setIsOkrOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md shadow-primary/20">
+                  <Plus className="mr-2 h-4 w-4" /> Create Goal (OKR)
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Define Objective & Key Result (OKR)</DialogTitle>
+                  <DialogDescription>Create a strategic target for the current quarter.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleOkrSubmit} className="space-y-4 pt-2">
                   <div className="space-y-1">
-                    <Label>Category</Label>
-                    <Select value={okrCategory} onValueChange={setOkrCategory}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Dept" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Engineering">Engineering</SelectItem>
-                        <SelectItem value="Management">Management</SelectItem>
-                        <SelectItem value="Operations">Operations</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>Objective Title</Label>
+                    <Input value={okrTitle} onChange={e => setOkrTitle(e.target.value)} placeholder="e.g. Optimize platform latency below 100ms" required />
                   </div>
-                  <div className="space-y-1">
-                    <Label>Weight</Label>
-                    <Input value={okrWeight} onChange={e => setOkrWeight(e.target.value)} placeholder="25%" required />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label>Category</Label>
+                      <Select value={okrCategory} onValueChange={setOkrCategory}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Dept" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Engineering">Engineering</SelectItem>
+                          <SelectItem value="Management">Management</SelectItem>
+                          <SelectItem value="Operations">Operations</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Weight</Label>
+                      <Input value={okrWeight} onChange={e => setOkrWeight(e.target.value)} placeholder="25%" required />
+                    </div>
                   </div>
-                </div>
-                <Button type="submit" className="w-full font-bold">Create Strategic Goal</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <Button type="submit" className="w-full font-bold">Create Strategic Goal</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 

@@ -33,9 +33,16 @@ export function saveStoredNotifications(list: UserNotification[]) {
   }
 }
 
-export function addTargetNotification(notif: UserNotification) {
+let notifCounter = 1000
+
+export function addTargetNotification(notif: Omit<UserNotification, "id"> & { id?: string }) {
+  notifCounter += 1
+  const fullNotif: UserNotification = {
+    id: notif.id || `NOTIF-${notifCounter}`,
+    ...notif,
+  }
   const current = getStoredNotifications()
-  const updated = [notif, ...current]
+  const updated = [fullNotif, ...current]
   saveStoredNotifications(updated)
   return updated
 }

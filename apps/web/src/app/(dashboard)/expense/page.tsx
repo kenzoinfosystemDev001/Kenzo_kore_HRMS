@@ -19,6 +19,7 @@ import {
   deleteExpenseClaim,
   ExpenseClaimRecord,
 } from "@/lib/expense-store"
+import { addTargetNotification } from "@/lib/notification-store"
 
 export default function ExpensePage() {
   const { user, isAdmin } = useAuth()
@@ -61,13 +62,37 @@ export default function ExpensePage() {
   }
 
   const handleApprove = (id: string) => {
+    const target = expenses.find(e => e.id === id)
     const updated = updateExpenseStatus(id, "Approved", "Approved for corporate accounts payout.")
     setExpenses(updated)
+
+    if (target) {
+      addTargetNotification({
+        targetEmail: target.employeeEmail.toLowerCase(),
+        title: "💰 Expense Claim Approved!",
+        message: `Your reimbursement claim (${target.id}) for ${target.amount} (${target.merchant}) has been APPROVED for payout!`,
+        type: "EXPENSE",
+        date: new Date().toLocaleDateString(),
+        isRead: false,
+      })
+    }
   }
 
   const handleReject = (id: string) => {
+    const target = expenses.find(e => e.id === id)
     const updated = updateExpenseStatus(id, "Rejected", "Receipt details required.")
     setExpenses(updated)
+
+    if (target) {
+      addTargetNotification({
+        targetEmail: target.employeeEmail.toLowerCase(),
+        title: "⚠️ Expense Claim Update",
+        message: `Your expense claim (${target.id}) for ${target.amount} was reviewed by Admin.`,
+        type: "EXPENSE",
+        date: new Date().toLocaleDateString(),
+        isRead: false,
+      })
+    }
   }
 
   const handleDeleteExpense = (id: string) => {

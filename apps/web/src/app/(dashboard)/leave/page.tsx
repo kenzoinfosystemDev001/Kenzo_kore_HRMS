@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { useAuth } from "@/lib/auth"
 import { getStoredLeaves, updateLeaveStatus, addLeaveRequest, deleteLeaveRequest, LeaveRequestRecord } from "@/lib/leave-store"
+import { addTargetNotification } from "@/lib/notification-store"
 import { leaveBalances, leaveTypes } from "@/features/leave/data"
 
 export default function LeaveManagementPage() {
@@ -31,13 +32,37 @@ export default function LeaveManagementPage() {
   const [reason, setReason] = useState("")
 
   const handleApprove = (id: string) => {
+    const target = leaves.find(l => l.id === id)
     const updated = updateLeaveStatus(id, "Approved")
     setLeaves(updated)
+
+    if (target) {
+      addTargetNotification({
+        targetEmail: target.employeeEmail.toLowerCase(),
+        title: "🎉 Leave Application Approved!",
+        message: `Your ${target.leaveType} application (${target.startDate} to ${target.endDate}) has been APPROVED by Admin.`,
+        type: "LEAVE",
+        date: new Date().toLocaleDateString(),
+        isRead: false,
+      })
+    }
   }
 
   const handleReject = (id: string) => {
+    const target = leaves.find(l => l.id === id)
     const updated = updateLeaveStatus(id, "Rejected")
     setLeaves(updated)
+
+    if (target) {
+      addTargetNotification({
+        targetEmail: target.employeeEmail.toLowerCase(),
+        title: "❌ Leave Application Update",
+        message: `Your ${target.leaveType} application (${target.startDate} to ${target.endDate}) was rejected by Admin.`,
+        type: "LEAVE",
+        date: new Date().toLocaleDateString(),
+        isRead: false,
+      })
+    }
   }
 
   const handleDelete = (id: string) => {
