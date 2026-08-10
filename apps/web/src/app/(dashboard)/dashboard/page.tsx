@@ -18,6 +18,7 @@ import {
   Award,
   ArrowRight,
   Trash2,
+  MessageSquare,
 } from "lucide-react"
 import {
   AreaChart,
@@ -43,6 +44,7 @@ import { getStoredEmployees, EmployeeRecord } from "@/lib/employee-store"
 import { getStoredLeaves, updateLeaveStatus, addLeaveRequest, deleteLeaveRequest, LeaveRequestRecord } from "@/lib/leave-store"
 import { getStoredPayslips, PayslipRecord } from "@/lib/payslip-store"
 import { getNotificationsForUser, markNotificationAsRead, addTargetNotification, UserNotification } from "@/lib/notification-store"
+import { getUnreadMessagesCount } from "@/lib/message-store"
 
 import {
   attendanceData,
@@ -207,6 +209,8 @@ export default function DashboardPage() {
   // EMPLOYEE PORTAL VIEW (Non-Admin View)
   // --------------------------------------------------------------------------
   if (!isAdmin) {
+    const unreadMsgCount = getUnreadMessagesCount(user?.email)
+
     return (
       <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
         {/* Live Admin Approval Pop-Up Notification Alert Banner */}
@@ -254,6 +258,12 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {unreadMsgCount > 0 && (
+              <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 text-xs font-extrabold px-3 py-1.5 flex items-center gap-2 animate-bounce">
+                <MessageSquare className="h-4 w-4 text-rose-500" />
+                <span>{unreadMsgCount} New Direct Message{unreadMsgCount > 1 ? "s" : ""}</span>
+              </Badge>
+            )}
             <Button variant="outline" className="border-border text-foreground">
               <Calendar className="mr-2 h-4 w-4 text-blue-500" /> August 2026
             </Button>

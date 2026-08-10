@@ -40,6 +40,8 @@ import {
   getStoredMessages,
   sendChatMessage,
   getAvailableChatRecipients,
+  getUnreadMessagesCount,
+  markMessagesAsRead,
   ChatMessage,
 } from "@/lib/message-store"
 import {
@@ -56,16 +58,35 @@ export function Header() {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>(() => getStoredMessages())
   
-  // Available recipients (If employee, ONLY admins are returned!)
+  // Available recipients (If employee, return all Admin & HR Leadership accounts)
   const availableRecipients = getAvailableChatRecipients(isAdmin, user?.email)
   const [selectedRecipientEmail, setSelectedRecipientEmail] = useState<string>(
     () => availableRecipients[0]?.email || "Ankit.sethi@kenzoinfosystems.com"
   )
   const [messageInput, setMessageInput] = useState("")
 
+  // Unread messages count for logged-in user
+  const unreadMessagesCount = getUnreadMessagesCount(user?.email)
+
   // Notifications State
   const userNotifications: UserNotification[] = getNotificationsForUser(user?.email)
   const unreadCount = userNotifications.filter(n => !n.isRead).length
+
+  const handleOpenChat = (open: boolean) => {
+    setIsChatOpen(open)
+    if (open && user?.email) {
+      const updated = markMessagesAsRead(user.email, selectedRecipientEmail)
+      setMessages(updated)
+    }
+  }
+
+  const handleSelectRecipient = (email: string) => {
+    setSelectedRecipientEmail(email)
+    if (user?.email) {
+      const updated = markMessagesAsRead(user.email, email)
+      setMessages(updated)
+    }
+  }
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
@@ -151,12 +172,25 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* 2. Chat / Message Dialog (Employee Chat Restricted Strictly to Admins Only!) */}
-        <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
+        {/* 2. Chat / Message Dialog (With Buzz Animation & Unread Badge Count) */}
+        <Dialog open={isChatOpen} onOpenChange={handleOpenChat}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl" title="Admin Direct Chat">
-              <MessageSquare size={19} />
-              <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-card" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`relative text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all ${
+                unreadMessagesCount > 0 ? "animate-bounce text-rose-500 bg-rose-500/10" : ""
+              }`}
+              title="Admin Direct Chat"
+            >
+              <MessageSquare size={19} className={unreadMessagesCount > 0 ? "text-rose-500" : ""} />
+              {unreadMessagesCount > 0 ? (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-extrabold text-white ring-2 ring-card shadow-lg">
+                  {unreadMessagesCount}
+                </span>
+              ) : (
+                <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-card" />
+              )}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-xl max-h-[85vh] flex flex-col justify-between p-6">
@@ -167,23 +201,23 @@ export function Header() {
                 </span>
                 {!isAdmin && (
                   <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px] font-bold flex items-center gap-1">
-                    <Lock className="h-3 w-3" /> Admin Chat Only
+                    <Lock className="h-3 w-3" /> Admin & HR Chat Only
                   </Badge>
                 )}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-1">
                 {!isAdmin 
-                  ? "Employees are authorized to initiate direct chat strictly with HR Administrators." 
+                  ? "Employees can communicate directly with HR Administrators and Executive Leadership." 
                   : "Admin Executive Communications Center."}
               </DialogDescription>
             </DialogHeader>
 
             {/* Recipient Selection Bar */}
             <div className="space-y-1.5 py-2 border-b border-border">
-              <Label className="text-xs font-bold text-muted-foreground">Select Chat Recipient ({!isAdmin ? "Admins Only" : "All Employees"}):</Label>
-              <Select value={selectedRecipientEmail} onValueChange={setSelectedRecipientEmail}>
+              <Label className="text-xs font-bold text-muted-foreground">Select Chat Recipient ({!isAdmin ? "Admins & HR Leadership" : "All Employees"}):</Label>
+              <Select value={selectedRecipientEmail} onValueChange={handleSelectRecipient}>
                 <SelectTrigger className="w-full bg-background font-bold text-xs">
-                  <SelectValue placeholder="Choose Admin..." />
+                  <SelectValue placeholder="Choose HR / Admin..." />
                 </SelectTrigger>
                 <SelectContent>
                   {availableRecipients.map(r => (
