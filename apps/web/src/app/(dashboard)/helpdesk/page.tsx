@@ -33,7 +33,7 @@ export default function HelpdeskPage() {
   const [priority, setPriority] = useState<HelpdeskTicketRecord["priority"]>("Medium")
   const [description, setDescription] = useState("")
 
-  const handleRaiseTicket = (e: React.FormEvent) => {
+  const handleRaiseTicket = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!subject.trim()) return
 
@@ -50,7 +50,7 @@ export default function HelpdeskPage() {
       createdAt: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
     }
 
-    const updated = addStoredTicket(newTicket)
+    const updated = await addStoredTicket(newTicket)
     setTicketsList(updated)
 
     // Notify Super Admin / Admin
@@ -68,8 +68,8 @@ export default function HelpdeskPage() {
     setIsRaiseOpen(false)
   }
 
-  const handleStatusChange = (id: string, status: HelpdeskTicketRecord["status"]) => {
-    const updated = updateTicketStatus(id, status)
+  const handleStatusChange = async (id: string, status: HelpdeskTicketRecord["status"]) => {
+    const updated = await updateTicketStatus(id, status)
     setTicketsList(updated)
 
     const target = ticketsList.find(t => t.id === id)
@@ -85,8 +85,8 @@ export default function HelpdeskPage() {
     }
   }
 
-  const handleDelete = (id: string) => {
-    const updated = deleteStoredTicket(id)
+  const handleDelete = async (id: string) => {
+    const updated = await deleteStoredTicket(id)
     setTicketsList(updated)
   }
 

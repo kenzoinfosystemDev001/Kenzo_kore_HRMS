@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { apiClient } from "./api-client"
 
 export interface HelpdeskTicketRecord {
@@ -16,122 +16,102 @@ export interface HelpdeskTicketRecord {
   createdAt: string
 }
 
-const STORAGE_KEY = "kenzo_hrms_tickets_store"
-const EVENT_NAME = "kenzo_ticket_updated"
+let inMemoryTicketsCache: HelpdeskTicketRecord[] = []
+const LISTENERS = new Set<() => void>()
 
-export const DEFAULT_TICKETS: HelpdeskTicketRecord[] = [
-  {
-    id: "TICK-1001",
-    subject: "Developer Workstation RAM Upgrade Request",
-    category: "IT & Tools Requirement",
-    raisedBy: "Sujal Kumar",
-    raisedByEmail: "Sujal.kumar@kenzoinfosystems.com",
-    assignedTo: "IT Support Team",
-    priority: "High",
-    status: "In Progress",
-    description: "Requesting 16GB additional RAM for local Docker & Next.js HRMS build performance.",
-    createdAt: "Aug 10, 2026",
-  },
-]
+function notifyListeners() {
+  LISTENERS.forEach(cb => cb())
+}
+
+export async function fetchTicketsFromApi(): Promise<HelpdeskTicketRecord[]> {
+  try {
+    const data = await apiClient.get<HelpdeskTicketRecord[]>('/helpdesk/tickets')
+    if (Array.isArray(data)) {
+      inMemoryTicketsCache = data
+      notifyListeners()
+      return data
+    }
+  } catch (err) {
+    console.warn("Error fetching tickets from Neon DB API:", err)
+  }
+  return inMemoryTicketsCache
+}
 
 export function getStoredTickets(): HelpdeskTicketRecord[] {
-  if (typeof window === "undefined") return DEFAULT_TICKETS
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as HelpdeskTicketRecord[]
-      if (parsed && parsed.length > 0) return parsed
-    }
-  } catch {
-    // Fallback
-  }
-  saveStoredTickets(DEFAULT_TICKETS)
-  return DEFAULT_TICKETS
+  return inMemoryTicketsCache
 }
 
-export function saveStoredTickets(list: HelpdeskTicketRecord[]) {
-  if (typeof window === "undefined") return
+export async function addStoredTicket(ticket: HelpdeskTicketRecord): Promise<HelpdeskTicketRecord[]> {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
-    window.dispatchEvent(new Event(EVENT_NAME))
-  } catch {
-    // Fallback
-  }
-}
-
-export function addStoredTicket(ticket: HelpdeskTicketRecord) {
-  // 1. Send HTTP POST request to NestJS API Backend so ticket is saved in PostgreSQL!
-  try {
-    apiClient.post('/helpdesk/tickets', {
+    await apiClient.post('/helpdesk/tickets', {
       subject: ticket.subject,
       category: ticket.category,
       description: ticket.description,
       priority: ticket.priority,
       raisedByEmail: ticket.raisedByEmail,
       raisedByName: ticket.raisedBy,
-    }).catch(err => console.warn("Backend API Helpdesk POST handled:", err))
-  } catch {
-    // API offline fallback
+    })
+    return await fetchTicketsFromApi()
+  } catch (err) {
+    console.warn("Failed to create ticket on Neon DB API:", err)
+    return inMemoryTicketsCache
   }
-
-  // 2. Sync client state and broadcast event
-  const current = getStoredTickets()
-  const updated = [ticket, ...current]
-  saveStoredTickets(updated)
-  return updated
 }
 
-export function updateTicketStatus(id: string, status: HelpdeskTicketRecord["status"]) {
-  // 1. Send HTTP PATCH request to NestJS API Backend
+export async function updateTicketStatus(id: string, status: HelpdeskTicketRecord["status"]): Promise<HelpdeskTicketRecord[]> {
   try {
-    apiClient.patch(`/helpdesk/tickets/${id}/status`, { status })
-      .catch(err => console.warn("Backend API Helpdesk PATCH handled:", err))
-  } catch {
-    // API offline fallback
+    await apiClient.patch(`/helpdesk/tickets/${id}/status`, { status })
+    return await fetchTicketsFromApi()
+  } catch (err) {
+    console.warn("Failed to update status on Neon DB API:", err)
+    return inMemoryTicketsCache
   }
-
-  // 2. Sync client state and broadcast event
-  const current = getStoredTickets()
-  const updated = current.map(t => (t.id === id ? { ...t, status } : t))
-  saveStoredTickets(updated)
-  return updated
 }
 
-export function deleteStoredTicket(id: string) {
-  // 1. Send HTTP DELETE request to NestJS API Backend
+export async function deleteStoredTicket(id: string): Promise<HelpdeskTicketRecord[]> {
   try {
-    apiClient.delete(`/helpdesk/tickets/${id}`)
-      .catch(err => console.warn("Backend API Helpdesk DELETE handled:", err))
-  } catch {
-    // API offline fallback
+    await apiClient.delete(`/helpdesk/tickets/${id}`)
+    return await fetchTicketsFromApi()
+  } catch (err) {
+    console.warn("Failed to delete ticket on Neon DB API:", err)
+    return inMemoryTicketsCache
   }
-
-  // 2. Sync client state and broadcast event
-  const current = getStoredTickets()
-  const updated = current.filter(t => t.id !== id)
-  saveStoredTickets(updated)
-  return updated
 }
 
 /**
- * Custom React Hook for real-time Helpdesk ticket synchronization across tabs & dashboards
+ * Custom React Hook for real-time Neon PostgreSQL Helpdesk ticket synchronization across devices
  */
 export function useHelpdeskTickets() {
-  const [tickets, setTickets] = useState<HelpdeskTicketRecord[]>(() => getStoredTickets())
+  const [tickets, setTickets] = useState<HelpdeskTicketRecord[]>(inMemoryTicketsCache)
+
+  const reload = useCallback(() => {
+    fetchTicketsFromApi().then(data => {
+      setTickets([...data])
+    })
+  }, [])
 
   useEffect(() => {
-    const handleSync = () => {
-      setTickets(getStoredTickets())
+    // Initial fetch on mount
+    reload()
+
+    // Real-time polling every 3 seconds so ANY device updates automatically from Neon DB!
+    const interval = setInterval(() => {
+      fetchTicketsFromApi().then(data => {
+        setTickets([...data])
+      })
+    }, 3000)
+
+    const handleListener = () => {
+      setTickets([...inMemoryTicketsCache])
     }
 
-    window.addEventListener(EVENT_NAME, handleSync)
-    window.addEventListener("storage", handleSync)
+    LISTENERS.add(handleListener)
 
     return () => {
-      window.removeEventListener(EVENT_NAME, handleSync)
-      window.removeEventListener("storage", handleSync)
+      clearInterval(interval)
+      LISTENERS.delete(handleListener)
     }
-  }, [])
+  }, [reload])
 
   return [tickets, setTickets] as const
 }

@@ -121,7 +121,7 @@ export default function DashboardPage() {
   const myPayslipsList = payslips.filter(p => p.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
   const myTicketsList = tickets.filter(t => t.raisedByEmail.toLowerCase() === user?.email?.toLowerCase())
 
-  const handleRaiseDashboardTicket = (e: React.FormEvent) => {
+  const handleRaiseDashboardTicket = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!ticketSubject.trim()) return
 
@@ -138,7 +138,7 @@ export default function DashboardPage() {
       createdAt: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
     }
 
-    const updated = addStoredTicket(newTicket)
+    const updated = await addStoredTicket(newTicket)
     setTickets(updated)
 
     addTargetNotification({
