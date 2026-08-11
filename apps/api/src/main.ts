@@ -15,7 +15,7 @@ async function bootstrap() {
   app.use(helmet());
   app.enableShutdownHooks();
 
-  app.setGlobalPrefix('api', { exclude: ['/health'] });
+  app.setGlobalPrefix('api', { exclude: ['/', '/health'] });
   
   app.useGlobalPipes(
     new ValidationPipe({
