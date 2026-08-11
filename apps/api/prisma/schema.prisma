@@ -258,16 +258,23 @@ model User {
   employeeId      String?   @unique @map("employee_id") @db.Uuid
   isActive        Boolean   @default(true) @map("is_active")
   emailVerified   Boolean   @default(false) @map("email_verified")
+  mfaEnabled      Boolean   @default(false) @map("mfa_enabled")
+  mfaSecret       String?   @map("mfa_secret")
+  googleId        String?   @map("google_id")
+  microsoftId     String?   @map("microsoft_id")
+  lastLoginAt     DateTime? @map("last_login_at") @db.Timestamptz
+  lastLoginIp     String?   @map("last_login_ip") @db.VarChar(45)
   passwordChangedAt DateTime? @map("password_changed_at") @db.Timestamptz
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz
 
-  tenant    Tenant     @relation(fields: [tenantId], references: [id])
-  employee  Employee?  @relation(fields: [employeeId], references: [id])
-  userRoles UserRole[]
-  sessions  Session[]
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  employee      Employee?      @relation(fields: [employeeId], references: [id])
+  userRoles     UserRole[]
+  sessions      Session[]
   notifications Notification[]
+  refreshTokens RefreshToken[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -350,6 +357,23 @@ model Session {
   @@index([userId])
   @@index([tokenHash])
   @@map("sessions")
+}
+
+model RefreshToken {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  tokenHash       String    @map("token_hash")
+  expiresAt       DateTime  @map("expires_at") @db.Timestamptz
+  revokedAt       DateTime? @map("revoked_at") @db.Timestamptz
+  replacedByToken String?   @map("replaced_by_token")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 model AuditLog {

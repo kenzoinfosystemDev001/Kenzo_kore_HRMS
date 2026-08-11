@@ -10,7 +10,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get('JWT_SECRET') || 'super-secret',
+      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
     });
   }
 
@@ -19,7 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       where: { id: payload.sub },
       include: { userRoles: { include: { role: { include: { rolePermissions: { include: { permission: true } } } } } } },
     });
-    if (!user || user.deletedAt) throw new UnauthorizedException();
+    if (!user || user.deletedAt || !user.isActive) throw new UnauthorizedException();
     const permissions = user.userRoles.flatMap((ur: any) => ur.role.rolePermissions.map((rp: any) => rp.permission.code));
     const roles = user.userRoles.map((ur: any) => ur.role.slug);
     return { userId: user.id, email: user.email, tenantId: user.tenantId, permissions, roles };

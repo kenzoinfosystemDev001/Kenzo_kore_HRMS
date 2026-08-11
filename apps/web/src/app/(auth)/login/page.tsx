@@ -148,8 +148,8 @@ export default function LoginPage() {
       <footer className="relative z-20 border-t border-border bg-slate-950/90 py-4 px-6 text-center text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between max-w-7xl w-full mx-auto">
         <div>© 2026 Kenzo HRMS. Enterprise Multi-Tenant Platform.</div>
         <div className="flex items-center gap-4 mt-2 sm:mt-0">
-          <span className="flex items-center gap-1.5"><Lock className="h-3 w-3 text-emerald-400" /> SSL Encrypted</span>
-          <span className="flex items-center gap-1.5"><ShieldCheck className="h-3 w-3 text-blue-400" /> SOC2 Type II Certified</span>
+          <span className="flex items-center gap-1.5"><Lock className="h-3 w-3 text-emerald-400" /> 256-Bit SSL Encrypted</span>
+          <span className="flex items-center gap-1.5"><ShieldCheck className="h-3 w-3 text-blue-400" /> Multi-Tenant Role Isolation</span>
         </div>
       </footer>
     </div>

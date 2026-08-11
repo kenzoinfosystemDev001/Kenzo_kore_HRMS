@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { normalizeSystemRole, SystemRole } from '../../common/enums/system-role.enum';
 
 @Injectable()
 export class EmployeesService {
@@ -41,24 +43,41 @@ export class EmployeesService {
         throw new ConflictException('An account with this email address already exists in database');
       }
 
-      // 2. Securely hash password using bcrypt
-      const pwd = password || 'kenzo123';
+      // 2. Securely hash password using bcrypt (cryptographically random temporary password if missing)
+      const pwd = password && password.trim() ? password.trim() : crypto.randomBytes(8).toString('hex');
       const passwordHash = await bcrypt.hash(pwd, 10);
 
-      // 3. Resolve Organization
+      // 3. Resolve Tenant Organization
       let org = await tx.organization.findFirst({ where: { tenantId } });
       if (!org) {
+        const tenant = await tx.tenant.findUnique({ where: { id: tenantId } });
+        if (!tenant) throw new NotFoundException('Tenant not found');
         org = await tx.organization.create({
-          data: { tenantId, name: 'Kenzo Infosystems Pvt. Ltd.' },
+          data: { tenantId, name: tenant.name },
         });
       }
 
-      // 4. Create Employee Record in PostgreSQL
+      // 4. Generate collision-safe employee code
+      let finalCode = employeeCode?.trim();
+      if (!finalCode) {
+        const count = await tx.employee.count({ where: { tenantId } });
+        finalCode = `EMP-${1000 + count + 1}`;
+
+        let existsCode = await tx.employee.findFirst({ where: { tenantId, employeeCode: finalCode } });
+        let attempts = 0;
+        while (existsCode && attempts < 10) {
+          attempts++;
+          finalCode = `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
+          existsCode = await tx.employee.findFirst({ where: { tenantId, employeeCode: finalCode } });
+        }
+      }
+
+      // 5. Create Employee Record in PostgreSQL
       const employee = await tx.employee.create({
         data: {
           tenantId,
           organizationId: org.id,
-          employeeCode: employeeCode || `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
+          employeeCode: finalCode,
           firstName,
           lastName,
           workEmail: normalizedEmail,
@@ -71,17 +90,18 @@ export class EmployeesService {
         },
       });
 
-      // 5. Map Role & Create User Account in PostgreSQL
+      // 6. Map Role via Canonical Enum & Create User Account in PostgreSQL
+      const canonRole = normalizeSystemRole(systemRole);
       let targetSlug = 'employee';
       let targetName = 'Employee';
 
-      if (systemRole === 'Super_admin' || systemRole === 'super-admin') {
+      if (canonRole === SystemRole.SUPER_ADMIN) {
         targetSlug = 'super-admin';
         targetName = 'Super_admin';
-      } else if (systemRole === 'Admin' || systemRole === 'admin') {
+      } else if (canonRole === SystemRole.ADMIN) {
         targetSlug = 'admin';
         targetName = 'Admin';
-      } else if (systemRole === 'HR' || systemRole === 'hr' || systemRole === 'hr-manager') {
+      } else if (canonRole === SystemRole.HR) {
         targetSlug = 'hr';
         targetName = 'HR';
       }
@@ -116,7 +136,7 @@ export class EmployeesService {
         },
       });
 
-      // 6. Audit Log Entry
+      // 7. Audit Log Entry
       await tx.auditLog.create({
         data: {
           tenantId,
@@ -128,7 +148,7 @@ export class EmployeesService {
         },
       });
 
-      return { ...employee, user };
+      return { ...employee, user, generatedTempPassword: password ? undefined : pwd };
     });
   }
 

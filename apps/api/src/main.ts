@@ -15,7 +15,7 @@ async function bootstrap() {
   app.use(helmet());
   app.enableShutdownHooks();
 
-  app.setGlobalPrefix('api', { exclude: ['/'] });
+  app.setGlobalPrefix('api', { exclude: ['/health'] });
   
   app.useGlobalPipes(
     new ValidationPipe({
@@ -28,8 +28,17 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
+  const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+  const allowedOrigins = [frontendUrl, 'http://localhost:3000', 'http://localhost:3001', 'https://kenzo-kore-hrms-web.vercel.app'];
+
   app.enableCors({
-    origin: configService.get<string>('FRONTEND_URL') || '*',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS origin security violation'));
+      }
+    },
     credentials: true,
   });
 
@@ -43,12 +52,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const httpAdapter = app.getHttpAdapter();
-  httpAdapter.get('/api/health', (req: any, res: any) => {
-    res.send({ status: 'ok', timestamp: new Date().toISOString() });
-  });
-
-  const port = configService.get<number>('PORT') || 3000;
+  const port = configService.get<number>('PORT') || 4000;
   await app.listen(port);
   
   logger.log(`Application is running on: ${await app.getUrl()}`);

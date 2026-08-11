@@ -1,13 +1,48 @@
 services:
-  # NestJS Backend API
+  # 1. NestJS Backend API Service
   - type: web
     name: kenzo-hrms-api
     env: node
-    plan: free
-    buildCommand: npm install && npm run build -w apps/api
+    plan: starter
+    rootDir: .
+    buildCommand: npm install && npm run db:generate -w apps/api && npm run build -w apps/api
     startCommand: npm run start:prod -w apps/api
+    healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: 20.14.0
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kenzo-hrms-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://kenzo-hrms-web.onrender.com
 
+  # 2. Next.js Frontend Web Application Service
+  - type: web
+    name: kenzo-hrms-web
+    env: node
+    plan: starter
+    rootDir: .
+    buildCommand: npm install && npm run build -w apps/web
+    startCommand: npm run start -w apps/web
+    envVars:
+      - key: NODE_VERSION
+        value: 20.14.0
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://kenzo-hrms-api.onrender.com
 
+databases:
+  # Managed PostgreSQL Database Service
+  - name: kenzo-hrms-postgres
+    databaseName: kenzo_hrms_db
+    user: kenzo_user
+    plan: starter
