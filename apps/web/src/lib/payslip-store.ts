@@ -23,48 +23,7 @@ export interface PayslipRecord {
   tdsDeduction?: string
 }
 
-export const DEFAULT_PAYSLIPS: PayslipRecord[] = [
-  {
-    id: "PAY-2026-07-1002",
-    employeeName: "Sujal Kumar",
-    employeeEmail: "Sujal.kumar@kenzoinfosystems.com",
-    month: "July 2026",
-    basicPay: "₹75,000",
-    allowances: "₹15,000",
-    deductions: "₹5,000",
-    netPay: "₹85,000",
-    gross: "₹90,000",
-    net: "₹85,000",
-    date: "Aug 01, 2026",
-    hra: "₹15,000",
-    specialAllowance: "₹10,000",
-    pfDeduction: "₹3,000",
-    tdsDeduction: "₹2,000",
-    status: "Paid",
-    issuedDate: "Aug 01, 2026",
-  },
-  {
-    id: "PAY-2026-07-1001",
-    employeeName: "Ankit Sethi",
-    employeeEmail: "Ankit.sethi@kenzoinfosystems.com",
-    month: "July 2026",
-    basicPay: "₹1,80,000",
-    allowances: "₹40,000",
-    deductions: "₹15,000",
-    netPay: "₹2,05,000",
-    gross: "₹2,20,000",
-    net: "₹2,05,000",
-    date: "Aug 01, 2026",
-    hra: "₹35,000",
-    specialAllowance: "₹20,000",
-    pfDeduction: "₹8,000",
-    tdsDeduction: "₹7,000",
-    status: "Paid",
-    issuedDate: "Aug 01, 2026",
-  },
-]
-
-let inMemoryPayslipsCache: PayslipRecord[] = DEFAULT_PAYSLIPS
+let inMemoryPayslipsCache: PayslipRecord[] = []
 const LISTENERS = new Set<() => void>()
 
 function notifyListeners() {
@@ -74,7 +33,7 @@ function notifyListeners() {
 export async function fetchPayslipsFromApi(): Promise<PayslipRecord[]> {
   try {
     const data = await apiClient.get<PayslipRecord[]>('/payroll/payslips')
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data)) {
       inMemoryPayslipsCache = data.map(p => ({
         ...p,
         gross: p.gross || p.basicPay,
@@ -117,6 +76,11 @@ export function addStoredPayslip(payslip: Partial<PayslipRecord>): PayslipRecord
   }
   inMemoryPayslipsCache = [newRec, ...inMemoryPayslipsCache]
   notifyListeners()
+
+  apiClient.post('/payroll/payslips/generate', payslip).catch(err => {
+    console.warn("Failed to generate payslip on Neon DB API:", err)
+  })
+
   return newRec
 }
 

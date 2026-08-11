@@ -59,65 +59,7 @@ export interface EmployeeRecord {
   uploadedDocuments?: Record<string, UploadedDocRecord>
 }
 
-export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
-  {
-    id: "EMP-1001",
-    name: "Ankit Sethi",
-    email: "ankit.sethi@kenzoinfosystems.com",
-    role: "CEO & Founder",
-    systemRole: "Super Admin",
-    dept: "Management",
-    status: "Active",
-    joinDate: "Jan 10, 2022",
-    phone: "+91 98765 43210",
-  },
-  {
-    id: "EMP-1002",
-    name: "Sujal Kumar",
-    email: "sujal.kumar@kenzoinfosystems.com",
-    role: "Software Engineer",
-    systemRole: "Employee",
-    dept: "Engineering",
-    status: "Active",
-    joinDate: "Mar 15, 2023",
-    phone: "+91 98765 43211",
-  },
-  {
-    id: "EMP-1003",
-    name: "Chanchal Saini",
-    email: "chanchal.saini@kenzoinfosystems.com",
-    role: "Managing Director",
-    systemRole: "Admin",
-    dept: "Administration",
-    status: "Active",
-    joinDate: "Jun 01, 2022",
-    phone: "+91 98765 43212",
-  },
-  {
-    id: "EMP-1004",
-    name: "Jitender Saini",
-    email: "jitender.saini@kenzoinfosystems.com",
-    role: "VP Engineering",
-    systemRole: "Super Admin",
-    dept: "Engineering",
-    status: "Active",
-    joinDate: "Aug 20, 2022",
-    phone: "+91 98765 43213",
-  },
-  {
-    id: "EMP-1005",
-    name: "Laxmi Narayan",
-    email: "laxminarayan.ojha@kenzoinfosystems.com",
-    role: "Field Sales Executive",
-    systemRole: "Employee",
-    dept: "Sales",
-    status: "Active",
-    joinDate: "Feb 01, 2024",
-    phone: "+91 98765 43214",
-  },
-]
-
-let inMemoryEmployeesCache: EmployeeRecord[] = DEFAULT_EMPLOYEES
+let inMemoryEmployeesCache: EmployeeRecord[] = []
 const LISTENERS = new Set<() => void>()
 
 function notifyListeners() {
@@ -127,7 +69,7 @@ function notifyListeners() {
 export async function fetchEmployeesFromApi(): Promise<EmployeeRecord[]> {
   try {
     const data = await apiClient.get<Record<string, unknown>[] >('/employees')
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data)) {
       const mapped: EmployeeRecord[] = data.map(e => {
         const dept = (e.department as Record<string, unknown>) || {}
         const desig = (e.designation as Record<string, unknown>) || {}
@@ -181,7 +123,7 @@ export async function addStoredEmployee(emp: Partial<EmployeeRecord>): Promise<E
     password: emp.password || 'kenzo123',
   }
 
-  // Optimistic UI update so employee appears instantly on-screen
+  // Optimistic UI update
   inMemoryEmployeesCache = [newRec, ...inMemoryEmployeesCache.filter(e => e.id !== newRec.id)]
   notifyListeners()
 
@@ -202,8 +144,10 @@ export async function addStoredEmployee(emp: Partial<EmployeeRecord>): Promise<E
     })
     return await fetchEmployeesFromApi()
   } catch (err) {
-    console.warn("Neon DB API employee POST completed/handled:", err)
-    return inMemoryEmployeesCache
+    // Rollback optimistic update on API error so UI reflects real server state
+    inMemoryEmployeesCache = inMemoryEmployeesCache.filter(e => e.id !== newRec.id)
+    notifyListeners()
+    throw err
   }
 }
 
@@ -224,7 +168,7 @@ export async function updateStoredEmployee(emp: Partial<EmployeeRecord>, oldId?:
       return await fetchEmployeesFromApi()
     } catch (err) {
       console.warn("Failed to update employee on Neon DB API:", err)
-      return inMemoryEmployeesCache
+      return fetchEmployeesFromApi()
     }
   }
   return inMemoryEmployeesCache
@@ -239,7 +183,7 @@ export async function deleteStoredEmployee(id: string): Promise<EmployeeRecord[]
     return await fetchEmployeesFromApi()
   } catch (err) {
     console.warn("Failed to delete employee on Neon DB API:", err)
-    return inMemoryEmployeesCache
+    return fetchEmployeesFromApi()
   }
 }
 

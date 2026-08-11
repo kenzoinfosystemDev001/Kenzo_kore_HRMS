@@ -16,22 +16,7 @@ export interface HelpdeskTicketRecord {
   createdAt: string
 }
 
-export const DEFAULT_TICKETS: HelpdeskTicketRecord[] = [
-  {
-    id: "TICK-1001",
-    subject: "Developer Workstation RAM Upgrade Request",
-    category: "IT & Tools Requirement",
-    raisedBy: "Sujal Kumar",
-    raisedByEmail: "Sujal.kumar@kenzoinfosystems.com",
-    assignedTo: "IT Support Team",
-    priority: "High",
-    status: "In Progress",
-    description: "Requesting 16GB additional RAM for local Docker & Next.js HRMS build performance.",
-    createdAt: "Aug 10, 2026",
-  },
-]
-
-let inMemoryTicketsCache: HelpdeskTicketRecord[] = DEFAULT_TICKETS
+let inMemoryTicketsCache: HelpdeskTicketRecord[] = []
 const LISTENERS = new Set<() => void>()
 
 function notifyListeners() {
@@ -41,7 +26,7 @@ function notifyListeners() {
 export async function fetchTicketsFromApi(): Promise<HelpdeskTicketRecord[]> {
   try {
     const data = await apiClient.get<HelpdeskTicketRecord[]>('/helpdesk/tickets')
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data)) {
       inMemoryTicketsCache = data
       notifyListeners()
       return data
@@ -72,8 +57,9 @@ export async function addStoredTicket(ticket: HelpdeskTicketRecord): Promise<Hel
     })
     return await fetchTicketsFromApi()
   } catch (err) {
-    console.warn("Neon DB API POST handled:", err)
-    return inMemoryTicketsCache
+    inMemoryTicketsCache = inMemoryTicketsCache.filter(t => t.id !== ticket.id)
+    notifyListeners()
+    throw err
   }
 }
 
@@ -86,7 +72,7 @@ export async function updateTicketStatus(id: string, status: HelpdeskTicketRecor
     return await fetchTicketsFromApi()
   } catch (err) {
     console.warn("Neon DB API PATCH handled:", err)
-    return inMemoryTicketsCache
+    return fetchTicketsFromApi()
   }
 }
 
@@ -99,7 +85,7 @@ export async function deleteStoredTicket(id: string): Promise<HelpdeskTicketReco
     return await fetchTicketsFromApi()
   } catch (err) {
     console.warn("Neon DB API DELETE handled:", err)
-    return inMemoryTicketsCache
+    return fetchTicketsFromApi()
   }
 }
 

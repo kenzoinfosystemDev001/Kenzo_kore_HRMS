@@ -28,7 +28,7 @@ function notifyListeners() {
 export async function fetchLeavesFromApi(): Promise<LeaveRequestRecord[]> {
   try {
     const data = await apiClient.get<LeaveRequestRecord[]>('/leave/requests')
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data)) {
       inMemoryLeavesCache = data.map(d => ({
         ...d,
         leaveType: d.leaveType || d.type,
@@ -78,8 +78,9 @@ export async function addLeaveRequest(request: Partial<LeaveRequestRecord>): Pro
     })
     return await fetchLeavesFromApi()
   } catch (err) {
-    console.warn("Neon DB API POST handled:", err)
-    return inMemoryLeavesCache
+    inMemoryLeavesCache = inMemoryLeavesCache.filter(l => l.id !== newReq.id)
+    notifyListeners()
+    throw err
   }
 }
 
@@ -93,14 +94,14 @@ export async function updateLeaveStatus(id: string, status: LeaveRequestRecord["
     return await fetchLeavesFromApi()
   } catch (err) {
     console.warn("Neon DB API PATCH handled:", err)
-    return inMemoryLeavesCache
+    return fetchLeavesFromApi()
   }
 }
 
 export async function deleteLeaveRequest(id: string): Promise<LeaveRequestRecord[]> {
   inMemoryLeavesCache = inMemoryLeavesCache.filter(l => l.id !== id)
   notifyListeners()
-  return inMemoryLeavesCache
+  return fetchLeavesFromApi()
 }
 
 export function useLeaves() {
