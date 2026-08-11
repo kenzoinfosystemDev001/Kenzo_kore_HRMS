@@ -49,10 +49,8 @@ export class LeaveService {
     }
 
     if (!employee) {
-      employee = await this.prisma.employee.findFirst({ where: { tenantId: tid } });
+      throw new NotFoundException('Employee account not found for current session');
     }
-
-    if (!employee) throw new NotFoundException('Employee not found');
 
     let leaveType = await this.prisma.leaveType.findFirst({ where: { tenantId: tid } });
     if (!leaveType) {
