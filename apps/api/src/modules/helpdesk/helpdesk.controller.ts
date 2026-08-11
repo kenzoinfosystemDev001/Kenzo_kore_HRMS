@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
 import { HelpdeskService } from './helpdesk.service';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { CreateTicketDto } from './dto/create-ticket.dto';
-import { Public } from '../../common/decorators/public.decorator';
+import { TenantId } from '../../common/decorators/tenant.decorator';
 
 @ApiTags('Helpdesk')
 @ApiBearerAuth()
@@ -10,31 +10,27 @@ import { Public } from '../../common/decorators/public.decorator';
 export class HelpdeskController {
   constructor(private readonly helpdeskService: HelpdeskService) {}
 
-  @Public()
   @Get('tickets')
   @ApiOperation({ summary: 'Get tickets' })
-  getTickets(@Req() req: any) {
-    return this.helpdeskService.getTickets(req.user?.tenantId);
+  getTickets(@TenantId() tenantId: string) {
+    return this.helpdeskService.getTickets(tenantId);
   }
 
-  @Public()
   @Post('tickets')
   @ApiOperation({ summary: 'Create ticket' })
-  createTicket(@Req() req: any, @Body() dto: CreateTicketDto) {
-    return this.helpdeskService.createTicket(req.user?.tenantId, dto);
+  createTicket(@TenantId() tenantId: string, @Body() dto: CreateTicketDto) {
+    return this.helpdeskService.createTicket(tenantId, dto);
   }
 
-  @Public()
   @Patch('tickets/:id/status')
   @ApiOperation({ summary: 'Update ticket status' })
-  updateStatus(@Req() req: any, @Param('id') id: string, @Body('status') status: string) {
-    return this.helpdeskService.updateStatus(req.user?.tenantId, id, status);
+  updateStatus(@TenantId() tenantId: string, @Param('id') id: string, @Body('status') status: string) {
+    return this.helpdeskService.updateStatus(tenantId, id, status);
   }
 
-  @Public()
   @Delete('tickets/:id')
   @ApiOperation({ summary: 'Delete ticket' })
-  deleteTicket(@Req() req: any, @Param('id') id: string) {
-    return this.helpdeskService.deleteTicket(req.user?.tenantId, id);
+  deleteTicket(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.helpdeskService.deleteTicket(tenantId, id);
   }
 }

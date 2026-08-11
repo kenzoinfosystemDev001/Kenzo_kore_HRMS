@@ -331,6 +331,7 @@ interface ApiProfileResponse {
   )
 
   const logout = useCallback(() => {
+    apiClient.post('/auth/logout').catch(() => null)
     setUser(null)
     localStorage.removeItem(STORAGE_KEY)
     localStorage.removeItem(TOKEN_KEY)

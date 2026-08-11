@@ -28,10 +28,8 @@ export class AttendanceService {
     }
 
     if (!employee) {
-      employee = await this.prisma.employee.findFirst({ where: { tenantId: tid } });
+      throw new NotFoundException('Employee account not found for current session');
     }
-
-    if (!employee) throw new NotFoundException('Employee not found');
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -72,10 +70,8 @@ export class AttendanceService {
     }
 
     if (!employee) {
-      employee = await this.prisma.employee.findFirst({ where: { tenantId: tid } });
+      throw new NotFoundException('Employee account not found for current session');
     }
-
-    if (!employee) throw new NotFoundException('Employee not found');
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -85,7 +81,7 @@ export class AttendanceService {
     });
 
     if (!record) {
-      return this.clockIn(tid, employee.id, data);
+      throw new BadRequestException('ATTENDANCE_NOT_STARTED: Cannot clock out before clocking in for today');
     }
 
     const checkOut = new Date();
