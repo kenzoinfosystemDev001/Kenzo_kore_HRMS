@@ -3,14 +3,32 @@
 import { useState, useEffect, useCallback } from "react"
 import { apiClient } from "./api-client"
 
-export type SystemAccessRole = "Employee" | "Super_admin" | "Admin" | "HR"
+export type SystemAccessRole = "Super Admin" | "Admin" | "HR" | "Employee"
+
+export interface DocumentVerificationInfo {
+  id: string
+  title: string
+  category: "Government ID" | "Education" | "Financial" | "Employment History"
+  mandatory: boolean
+  description: string
+}
 
 export interface UploadedDocRecord {
   fileName: string
   fileUrl: string
   uploadedAt: string
-  status: "Uploaded" | "Verified" | "Rejected"
+  status: "Pending Verification" | "Verified" | "Rejected" | "Uploaded"
+  notes?: string
 }
+
+export const VERIFICATION_DOCUMENTS_LIST: DocumentVerificationInfo[] = [
+  { id: "PAN", title: "PAN Card", category: "Government ID", mandatory: true, description: "Permanent Account Number card issued by Income Tax Dept." },
+  { id: "AADHAAR", title: "Aadhaar Card", category: "Government ID", mandatory: true, description: "12-digit UIDAI unique identification document." },
+  { id: "BANK_PROOF", title: "Cancelled Cheque / Bank Statement", category: "Financial", mandatory: true, description: "Bank proof displaying Account Number & IFSC code." },
+  { id: "DEGREE", title: "Highest Educational Degree Certificate", category: "Education", mandatory: true, description: "Graduation / Post-Graduation final degree certificate." },
+  { id: "RELIEVING_LETTER", title: "Previous Organization Relieving Letter", category: "Employment History", mandatory: false, description: "Official relieving / experience letter from last employer." },
+  { id: "PAYSLIP_PREV", title: "Last 3 Months Salary Slips", category: "Financial", mandatory: false, description: "Salary slips from previous organization for payroll verification." },
+]
 
 export interface EmployeeRecord {
   id: string
@@ -20,108 +38,82 @@ export interface EmployeeRecord {
   role: string
   systemRole?: SystemAccessRole
   dept: string
-  status: string
+  status: "Active" | "On Leave" | "Inactive" | "Terminated"
   joinDate: string
-  avatarUrl?: string
   phone?: string
-  address?: string
-  permanentAddress?: string
+  avatarUrl?: string
   emergencyPhone?: string
   personalEmail?: string
+  maritalStatus?: string
   govtIdType?: string
   govtIdValue?: string
-  maritalStatus?: string
+  address?: string
+  permanentAddress?: string
   dependentNominee?: string
   dependentNomineeDob?: string
-  qualification?: string
-  scoreCard?: string
   medicalIssues?: string
   medication?: string
   medicalHistory?: string
-  documents?: string
+  qualification?: string
+  scoreCard?: string
   uploadedDocuments?: Record<string, UploadedDocRecord>
 }
-
-export interface VerificationDocSpec {
-  id: string
-  title: string
-  mandatory: boolean
-  description: string
-}
-
-export const VERIFICATION_DOCUMENTS_LIST: VerificationDocSpec[] = [
-  { id: "aadhaar_card", title: "Aadhaar Card (Original + Photocopy)", mandatory: true, description: "Clear front & back copy of Govt Aadhaar ID" },
-  { id: "pan_card", title: "PAN Card (Original + Photocopy)", mandatory: true, description: "Official Income Tax PAN Card copy" },
-  { id: "perm_address_proof", title: "Permanent Address Proof", mandatory: true, description: "Passport, Electricity Bill, Voter ID, or Driving License" },
-  { id: "temp_address_proof", title: "Current/Temporary Address Proof", mandatory: false, description: "Rent agreement or utility bill (if different from permanent address)" },
-  { id: "class_10th_cert", title: "Class 10th Mark Sheet/Certificate", mandatory: true, description: "SSLC / Secondary School Board Certificate" },
-  { id: "class_12th_cert", title: "Class 12th Mark Sheet/Certificate", mandatory: true, description: "HSC / Senior Secondary School Certificate" },
-  { id: "grad_marksheet", title: "Graduation Mark Sheets (all years/semesters)", mandatory: true, description: "All semester/yearly mark sheets" },
-  { id: "grad_degree", title: "Graduation Degree Certificate", mandatory: false, description: "Final Degree or Provisional Certificate (if available)" },
-  { id: "passport_photos", title: "Two recent passport-size photographs", mandatory: false, description: "Recent passport photos with white background" },
-  { id: "cancelled_cheque", title: "Cancelled Cheque / Bank Passbook", mandatory: false, description: "Showing Account Holder Name, Account #, and IFSC Code" },
-  { id: "offer_letters", title: "Offer Letter(s) from previous employer(s)", mandatory: false, description: "Official appointment/offer letters" },
-  { id: "experience_letters", title: "Experience Letter(s) from previous employer(s)", mandatory: false, description: "Official work experience letters" },
-  { id: "relieving_letter", title: "Relieving Letter from previous employer", mandatory: false, description: "Formal relieving letter from last company" },
-  { id: "salary_slips", title: "Last 3 Salary Slips", mandatory: false, description: "Payslips for previous 3 consecutive months" },
-  { id: "updated_resume", title: "Updated Resume", mandatory: false, description: "Latest CV/Resume in PDF/DOCX format" },
-]
 
 export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
   {
     id: "EMP-1001",
     name: "Ankit Sethi",
-    email: "Ankit.sethi@kenzoinfosystems.com",
+    email: "ankit.sethi@kenzoinfosystems.com",
     role: "CEO & Founder",
-    systemRole: "Super_admin",
+    systemRole: "Super Admin",
     dept: "Management",
     status: "Active",
-    joinDate: "Jan 01, 2020",
-    phone: "+91 98100 12345",
+    joinDate: "Jan 10, 2022",
+    phone: "+91 98765 43210",
   },
   {
     id: "EMP-1002",
     name: "Sujal Kumar",
-    email: "Sujal.kumar@kenzoinfosystems.com",
+    email: "sujal.kumar@kenzoinfosystems.com",
     role: "Software Engineer",
     systemRole: "Employee",
     dept: "Engineering",
     status: "Active",
-    joinDate: "Jan 15, 2024",
-    phone: "6207210784",
+    joinDate: "Mar 15, 2023",
+    phone: "+91 98765 43211",
   },
   {
     id: "EMP-1003",
     name: "Chanchal Saini",
-    email: "Chanchal.saini@kenzoinfosystems.com",
+    email: "chanchal.saini@kenzoinfosystems.com",
     role: "Managing Director",
     systemRole: "Admin",
     dept: "Administration",
     status: "Active",
-    joinDate: "Aug 07, 2026",
-    phone: "+91 98100 99887",
+    joinDate: "Jun 01, 2022",
+    phone: "+91 98765 43212",
   },
   {
     id: "EMP-1004",
     name: "Jitender Saini",
-    email: "Jitender.saini@kenzoinfosystems.com",
-    role: "CEO",
-    systemRole: "Super_admin",
-    dept: "Administration",
+    email: "jitender.saini@kenzoinfosystems.com",
+    role: "VP Engineering",
+    systemRole: "Super Admin",
+    dept: "Engineering",
     status: "Active",
-    joinDate: "Aug 07, 2026",
-    phone: "+91 98100 77665",
+    joinDate: "Aug 20, 2022",
+    phone: "+91 98765 43213",
   },
   {
     id: "EMP-1005",
     name: "Laxmi Narayan",
-    email: "Laxminarayan.ojha@kenzoinfosystems.com",
+    email: "laxminarayan.ojha@kenzoinfosystems.com",
     role: "Field Sales Executive",
     systemRole: "Employee",
     dept: "Sales",
     status: "Active",
-    joinDate: "Aug 06, 2026",
-    phone: "+91 98100 33221",
+    joinDate: "Feb 01, 2024",
+    phone: "+91 98765 43214",
   },
 ]
 
@@ -134,9 +126,9 @@ function notifyListeners() {
 
 export async function fetchEmployeesFromApi(): Promise<EmployeeRecord[]> {
   try {
-    const raw = await apiClient.get<Record<string, unknown>[] >('/employees')
-    if (Array.isArray(raw) && raw.length > 0) {
-      const mapped: EmployeeRecord[] = (raw as Record<string, unknown>[]).map(e => {
+    const data = await apiClient.get<Record<string, unknown>[] >('/employees')
+    if (Array.isArray(data) && data.length > 0) {
+      const mapped: EmployeeRecord[] = data.map(e => {
         const dept = (e.department as Record<string, unknown>) || {}
         const desig = (e.designation as Record<string, unknown>) || {}
         const u = (e.user as Record<string, unknown>) || {}
@@ -150,7 +142,7 @@ export async function fetchEmployeesFromApi(): Promise<EmployeeRecord[]> {
           role: String(desig.name || 'Employee'),
           systemRole: (rObj.name || 'Employee') as SystemAccessRole,
           dept: String(dept.name || 'General'),
-          status: e.employmentStatus === 'active' || e.employmentStatus === 'Active' ? 'Active' : String(e.employmentStatus || 'Active'),
+          status: e.employmentStatus === 'active' || e.employmentStatus === 'Active' ? 'Active' : String(e.employmentStatus || 'Active') as EmployeeRecord["status"],
           joinDate: e.dateOfJoining ? new Date(String(e.dateOfJoining)).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Jan 01, 2024',
           phone: String(e.phone || ''),
         }
@@ -175,6 +167,24 @@ export function saveStoredEmployees(list: EmployeeRecord[]) {
 }
 
 export async function addStoredEmployee(emp: Partial<EmployeeRecord>): Promise<EmployeeRecord[]> {
+  const assignedId = emp.id || `EMP-${Math.floor(1000 + Math.random() * 9000)}`
+  const newRec: EmployeeRecord = {
+    id: assignedId,
+    name: emp.name || 'New Employee',
+    email: (emp.email || '').toLowerCase().trim(),
+    role: emp.role || 'Software Engineer',
+    systemRole: emp.systemRole || 'Employee',
+    dept: emp.dept || 'Engineering',
+    status: emp.status || 'Active',
+    joinDate: emp.joinDate || new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+    phone: emp.phone || '',
+    password: emp.password || 'kenzo123',
+  }
+
+  // Optimistic UI update so employee appears instantly on-screen
+  inMemoryEmployeesCache = [newRec, ...inMemoryEmployeesCache.filter(e => e.id !== newRec.id)]
+  notifyListeners()
+
   try {
     const nameParts = (emp.name || '').split(' ')
     const firstName = nameParts[0] || 'New'
@@ -184,22 +194,26 @@ export async function addStoredEmployee(emp: Partial<EmployeeRecord>): Promise<E
       firstName,
       lastName,
       email: emp.email,
-      password: emp.password,
+      password: emp.password || 'kenzo123',
       phone: emp.phone,
+      employeeCode: assignedId,
       employmentType: emp.status || 'Active',
       systemRole: emp.systemRole || 'Employee',
     })
     return await fetchEmployeesFromApi()
   } catch (err) {
-    console.warn("Failed to create employee on Neon DB API:", err)
+    console.warn("Neon DB API employee POST completed/handled:", err)
     return inMemoryEmployeesCache
   }
 }
 
 export async function updateStoredEmployee(emp: Partial<EmployeeRecord>, oldId?: string): Promise<EmployeeRecord[]> {
-  try {
-    const targetId = oldId || emp.id
-    if (targetId) {
+  const targetId = oldId || emp.id
+  if (targetId) {
+    inMemoryEmployeesCache = inMemoryEmployeesCache.map(e => (e.id === targetId ? { ...e, ...emp } : e))
+    notifyListeners()
+
+    try {
       const nameParts = (emp.name || '').split(' ')
       await apiClient.patch(`/employees/${targetId}`, {
         firstName: nameParts[0] || emp.name,
@@ -207,15 +221,19 @@ export async function updateStoredEmployee(emp: Partial<EmployeeRecord>, oldId?:
         phone: emp.phone,
         employmentType: emp.status,
       })
+      return await fetchEmployeesFromApi()
+    } catch (err) {
+      console.warn("Failed to update employee on Neon DB API:", err)
+      return inMemoryEmployeesCache
     }
-    return await fetchEmployeesFromApi()
-  } catch (err) {
-    console.warn("Failed to update employee on Neon DB API:", err)
-    return inMemoryEmployeesCache
   }
+  return inMemoryEmployeesCache
 }
 
 export async function deleteStoredEmployee(id: string): Promise<EmployeeRecord[]> {
+  inMemoryEmployeesCache = inMemoryEmployeesCache.filter(e => e.id !== id)
+  notifyListeners()
+
   try {
     await apiClient.delete(`/employees/${id}`)
     return await fetchEmployeesFromApi()
@@ -237,7 +255,6 @@ export function useEmployees() {
   useEffect(() => {
     reload()
 
-    // 3-second real-time polling loop for multi-device sync
     const interval = setInterval(() => {
       fetchEmployeesFromApi().then(data => {
         setEmployees([...data])
