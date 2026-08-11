@@ -14,7 +14,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/lib/auth"
-import { apiClient } from "@/lib/api-client"
 import {
   useEmployees,
   useCreateEmployee,
@@ -25,14 +24,13 @@ import { EmployeeRecord, SystemAccessRole } from "@/lib/employee-store"
 
 export default function EmployeesPage() {
   const { user, isAdmin } = useAuth()
-  const { data: employeesList = [], isLoading, isError, error } = useEmployees()
+  const { data: employeesList = [], isError, error } = useEmployees()
   const createMutation = useCreateEmployee()
   const updateMutation = useUpdateEmployee()
   const deleteMutation = useDeleteEmployee()
 
   const [searchTerm, setSearchTerm] = useState("")
   const [editingEmp, setEditingEmp] = useState<EmployeeRecord | null>(null)
-  const [originalEmpId, setOriginalEmpId] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
 
   // New Employee Modal State
@@ -49,8 +47,8 @@ export default function EmployeesPage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id)
-    } catch (err: any) {
-      alert(err.message || "Failed to delete employee")
+    } catch (err: unknown) {
+      alert((err as Error).message || "Failed to delete employee")
     }
   }
 
@@ -77,8 +75,8 @@ export default function EmployeesPage() {
       setNewJoinDate("")
       setNewSystemRole("Employee")
       setIsAddOpen(false)
-    } catch (err: any) {
-      setFormError(err.message || "Failed to create employee on server")
+    } catch (err: unknown) {
+      setFormError((err as Error).message || "Failed to create employee on server")
     }
   }
 
@@ -90,9 +88,8 @@ export default function EmployeesPage() {
         data: editingEmp,
       })
       setEditingEmp(null)
-      setOriginalEmpId(null)
-    } catch (err: any) {
-      alert(err.message || "Failed to update employee")
+    } catch (err: unknown) {
+      alert((err as Error).message || "Failed to update employee")
     }
   }
 
@@ -109,7 +106,7 @@ export default function EmployeesPage() {
           <AlertCircle className="h-5 w-5 flex-shrink-0" />
           <div>
             <p className="font-semibold">Backend API Error</p>
-            <p className="text-sm">{(error as any)?.message || "Failed to load employees from server"}</p>
+            <p className="text-sm">{(error as Error)?.message || "Failed to load employees from server"}</p>
           </div>
         </div>
       )}
@@ -145,6 +142,7 @@ export default function EmployeesPage() {
                   <DialogDescription className="text-muted-foreground">Configure profile details and assign System Access Role (Employee, Super_admin, Admin, HR).</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleCreateEmployee} className="space-y-4 pt-2">
+                  {formError && <p className="text-red-500 text-xs font-semibold">{formError}</p>}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label className="text-foreground font-bold">Employee ID (EMP ID)</Label>
@@ -292,7 +290,6 @@ export default function EmployeesPage() {
                               className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
                               onClick={() => {
                                 setEditingEmp(emp)
-                                setOriginalEmpId(emp.id)
                               }}
                             >
                               <Edit className="h-4 w-4" />
@@ -316,7 +313,6 @@ export default function EmployeesPage() {
                               title="Edit My Profile"
                               onClick={() => {
                                 setEditingEmp(emp)
-                                setOriginalEmpId(emp.id)
                               }}
                             >
                               <Edit className="h-4 w-4" />

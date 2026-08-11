@@ -92,8 +92,8 @@ export default function EmployeeProfilePage() {
         data: formData,
       })
       setIsEditOpen(false)
-    } catch (err: any) {
-      alert(err.message || "Failed to update profile on server")
+    } catch (err: unknown) {
+      alert((err as Error).message || "Failed to update profile on server")
     }
   }
 

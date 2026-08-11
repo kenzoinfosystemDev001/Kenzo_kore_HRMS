@@ -43,7 +43,7 @@ export default function AttendancePage() {
   const isToday = selectedDate === todayStr
 
   // Load records dynamically for the selected calendar date
-  const records: AttendanceRecord[] = getStoredAttendanceByDate(selectedDate)
+  const records: AttendanceRecord[] = getStoredAttendanceByDate()
 
   // Attendance Isolation: Admins view company-wide roster, regular employees view ONLY their own attendance log
   const visibleRecords = isAdmin
@@ -84,9 +84,9 @@ export default function AttendancePage() {
 
     try {
       if (isMyClockedIn) {
-        clockOutEmployee(user.email, selectedDate)
+        clockOutEmployee(user.email)
       } else {
-        clockInEmployee(user.email, selectedDate)
+        clockInEmployee(user.email)
       }
       setErrorMsg(null)
     } catch (err: unknown) {
@@ -99,7 +99,7 @@ export default function AttendancePage() {
   const handleRegularizeSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!regEmpEmail || !regCheckIn || !regCheckOut) return
-    regularizeAttendance({ employeeEmail: regEmpEmail, checkIn: regCheckIn, checkOut: regCheckOut, notes: regReason || "Official Field Work" })
+    regularizeAttendance()
     setIsRegOpen(false)
     setRegReason("")
   }

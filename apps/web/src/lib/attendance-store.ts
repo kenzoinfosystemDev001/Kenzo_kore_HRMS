@@ -69,7 +69,7 @@ export function getAttendanceForEmail(email?: string): AttendanceRecord | undefi
   return inMemoryAttendanceCache.find(a => a.employeeEmail.toLowerCase() === email.toLowerCase() && a.date === todayStr)
 }
 
-export function getStoredAttendanceByDate(_date?: string): AttendanceRecord[] {
+export function getStoredAttendanceByDate(): AttendanceRecord[] {
   return inMemoryAttendanceCache
 }
 
@@ -104,7 +104,7 @@ export async function clockInUser(email: string, name: string): Promise<Attendan
   return newRec
 }
 
-export async function clockInEmployee(email: string, name?: string, _time?: string, _status?: AttendanceStatus, _loc?: string): Promise<AttendanceRecord> {
+export async function clockInEmployee(email: string, name?: string): Promise<AttendanceRecord> {
   return clockInUser(email, name || 'Employee')
 }
 
@@ -128,11 +128,11 @@ export async function clockOutUser(email: string): Promise<AttendanceRecord | un
   return rec
 }
 
-export async function clockOutEmployee(email: string, _time?: string, _workHours?: string, _loc?: string, _notes?: string): Promise<AttendanceRecord | undefined> {
+export async function clockOutEmployee(email: string): Promise<AttendanceRecord | undefined> {
   return clockOutUser(email)
 }
 
-export function regularizeAttendance(_record: Partial<AttendanceRecord>): AttendanceRecord[] {
+export function regularizeAttendance(): AttendanceRecord[] {
   return inMemoryAttendanceCache
 }
 

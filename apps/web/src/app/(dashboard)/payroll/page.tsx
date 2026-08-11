@@ -15,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { useAuth } from "@/lib/auth"
 import { useEmployees } from "@/lib/hooks/use-employees"
-import { EmployeeRecord } from "@/lib/employee-store"
 import { getStoredPayslips, addStoredPayslip, PayslipRecord } from "@/lib/payslip-store"
 import { addTargetNotification, getNotificationsForUser, markNotificationAsRead } from "@/lib/notification-store"
 
