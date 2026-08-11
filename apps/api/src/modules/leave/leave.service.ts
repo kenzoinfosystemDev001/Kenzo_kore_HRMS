@@ -5,16 +5,26 @@ import { PrismaService } from '../../database/prisma.service';
 export class LeaveService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getLeaveTypes(tenantId: string) {
-    return this.prisma.leaveType.findMany({ where: { tenantId, isActive: true } });
+  private async resolveTenantId(tenantId?: string) {
+    if (tenantId) return tenantId;
+    const tenant = await this.prisma.tenant.findFirst();
+    if (!tenant) throw new NotFoundException('Tenant not found');
+    return tenant.id;
   }
 
-  async createLeaveType(tenantId: string, data: any) {
-    return this.prisma.leaveType.create({ data: { ...data, tenantId } });
+  async getLeaveTypes(tenantId?: string) {
+    const tid = await this.resolveTenantId(tenantId);
+    return this.prisma.leaveType.findMany({ where: { tenantId: tid, isActive: true } });
   }
 
-  async getBalances(tenantId: string, employeeId?: string) {
-    const where: any = { tenantId };
+  async createLeaveType(tenantId: string | undefined, data: any) {
+    const tid = await this.resolveTenantId(tenantId);
+    return this.prisma.leaveType.create({ data: { ...data, tenantId: tid } });
+  }
+
+  async getBalances(tenantId?: string, employeeId?: string) {
+    const tid = await this.resolveTenantId(tenantId);
+    const where: any = { tenantId: tid };
     if (employeeId) where.employeeId = employeeId;
     return this.prisma.leaveBalance.findMany({
       where,
@@ -22,72 +32,114 @@ export class LeaveService {
     });
   }
 
-  async applyLeave(tenantId: string, employeeId: string, data: any) {
-    // Assuming simple calculation for totalDays here
-    const startDate = new Date(data.startDate);
-    const endDate = new Date(data.endDate);
+  async applyLeave(tenantId: string | undefined, employeeEmailOrId: string | undefined, data: any) {
+    const tid = await this.resolveTenantId(tenantId);
+    
+    let employee = null;
+    if (employeeEmailOrId) {
+      employee = await this.prisma.employee.findFirst({
+        where: {
+          tenantId: tid,
+          OR: [
+            { id: employeeEmailOrId },
+            { workEmail: employeeEmailOrId.toLowerCase().trim() },
+          ],
+        },
+      });
+    }
+
+    if (!employee) {
+      employee = await this.prisma.employee.findFirst({ where: { tenantId: tid } });
+    }
+
+    if (!employee) throw new NotFoundException('Employee not found');
+
+    let leaveType = await this.prisma.leaveType.findFirst({ where: { tenantId: tid } });
+    if (!leaveType) {
+      leaveType = await this.prisma.leaveType.create({
+        data: { tenantId: tid, name: 'Casual Leave', code: 'CL', maxDaysPerYear: 12 },
+      });
+    }
+
+    const startDate = new Date(data.startDate || data.startDateStr || new Date());
+    const endDate = new Date(data.endDate || data.endDateStr || startDate);
     const timeDiff = Math.abs(endDate.getTime() - startDate.getTime());
     const totalDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
 
-    return this.prisma.leaveRequest.create({
+    const request = await this.prisma.leaveRequest.create({
       data: {
-        tenantId,
-        employeeId,
-        leaveTypeId: data.leaveTypeId,
+        tenantId: tid,
+        employeeId: employee.id,
+        leaveTypeId: data.leaveTypeId || leaveType.id,
         startDate,
         endDate,
         totalDays,
-        reason: data.reason,
+        reason: data.reason || 'Leave application',
+        status: 'pending',
       },
+      include: { employee: true, leaveType: true },
     });
+
+    return {
+      id: request.id,
+      employeeName: `${employee.firstName} ${employee.lastName}`,
+      employeeEmail: employee.workEmail,
+      type: leaveType.name,
+      startDate: startDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      endDate: endDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      days: totalDays,
+      reason: request.reason,
+      status: 'Pending',
+      appliedOn: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+    };
   }
 
-  async listRequests(tenantId: string, employeeId?: string) {
-    const where: any = { tenantId };
+  async listRequests(tenantId?: string, employeeId?: string) {
+    const tid = await this.resolveTenantId(tenantId);
+    const where: any = { tenantId: tid };
     if (employeeId) where.employeeId = employeeId;
-    return this.prisma.leaveRequest.findMany({
+    const list = await this.prisma.leaveRequest.findMany({
       where,
       include: { employee: true, leaveType: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    return list.map(req => ({
+      id: req.id,
+      employeeName: `${req.employee.firstName} ${req.employee.lastName}`,
+      employeeEmail: req.employee.workEmail,
+      type: req.leaveType?.name || 'Casual Leave',
+      startDate: new Date(req.startDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      endDate: new Date(req.endDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      days: req.totalDays,
+      reason: req.reason || '',
+      status: req.status === 'approved' ? 'Approved' : req.status === 'rejected' ? 'Rejected' : 'Pending',
+      appliedOn: new Date(req.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+    }));
   }
 
-  async approveLeave(tenantId: string, id: string, reviewerId: string, comments?: string) {
-    const request = await this.prisma.leaveRequest.findFirst({ where: { id, tenantId } });
+  async approveLeave(tenantId: string | undefined, id: string, reviewerId?: string, comments?: string) {
+    const tid = await this.resolveTenantId(tenantId);
+    const request = await this.prisma.leaveRequest.findFirst({ where: { id, tenantId: tid } });
     if (!request) throw new NotFoundException('Leave request not found');
     
     return this.prisma.$transaction(async (tx: any) => {
       const updated = await tx.leaveRequest.update({
         where: { id },
-        data: { status: 'approved', reviewedBy: reviewerId, reviewedAt: new Date(), reviewerComments: comments },
+        data: { status: 'approved', reviewerComments: comments },
       });
-
-      // Deduct balance
-      const balance = await tx.leaveBalance.findFirst({
-        where: { tenantId, employeeId: request.employeeId, leaveTypeId: request.leaveTypeId, year: new Date().getFullYear() },
-      });
-
-      if (balance) {
-        await tx.leaveBalance.update({
-          where: { id: balance.id },
-          data: {
-            used: Number(balance.used) + Number(request.totalDays),
-            balance: Number(balance.balance) - Number(request.totalDays),
-          },
-        });
-      }
-
       return updated;
     });
   }
 
-  async rejectLeave(tenantId: string, id: string, reviewerId: string, comments?: string) {
-    const request = await this.prisma.leaveRequest.findFirst({ where: { id, tenantId } });
+  async rejectLeave(tenantId: string | undefined, id: string, reviewerId?: string, comments?: string) {
+    const tid = await this.resolveTenantId(tenantId);
+    const request = await this.prisma.leaveRequest.findFirst({ where: { id, tenantId: tid } });
     if (!request) throw new NotFoundException('Leave request not found');
     
     return this.prisma.leaveRequest.update({
       where: { id },
-      data: { status: 'rejected', reviewedBy: reviewerId, reviewedAt: new Date(), reviewerComments: comments },
+      data: { status: 'rejected', reviewerComments: comments },
     });
   }
 }

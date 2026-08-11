@@ -47,7 +47,7 @@ export default function EmployeesPage() {
     } catch (err) {
       console.warn("Backend API delete failed or offline mode:", err)
     }
-    const updated = deleteStoredEmployee(id)
+    const updated = await deleteStoredEmployee(id)
     setEmployeesList(updated)
   }
 
@@ -61,10 +61,6 @@ export default function EmployeesPage() {
 
     const assignedId = newEmpId.trim() ? newEmpId.trim() : `EMP-${Math.floor(1000 + Math.random() * 9000)}`
 
-    const nameParts = newName.trim().split(" ")
-    const firstName = nameParts[0] || newName
-    const lastName = nameParts.slice(1).join(" ") || "Employee"
-
     const newEmp: EmployeeRecord = {
       id: assignedId,
       name: newName,
@@ -77,23 +73,7 @@ export default function EmployeesPage() {
       joinDate: formattedJoinDate,
     }
 
-    // 1. Post to NestJS API Backend so it commits User + Employee + Role to PostgreSQL!
-    try {
-      await apiClient.post('/employees', {
-        firstName,
-        lastName,
-        email: newEmail.toLowerCase().trim(),
-        password: newPassword || "kenzo123",
-        employeeCode: assignedId,
-        systemRole: newSystemRole,
-        dateOfJoining: newJoinDate || new Date().toISOString(),
-      })
-    } catch (apiError) {
-      console.warn("Backend API POST completed/handled:", apiError)
-    }
-
-    // 2. Sync client state
-    const updated = addStoredEmployee(newEmp)
+    const updated = await addStoredEmployee(newEmp)
     setEmployeesList(updated)
     setNewEmpId("")
     setNewName("")
@@ -107,21 +87,7 @@ export default function EmployeesPage() {
 
   const handleSaveEdit = async () => {
     if (!editingEmp) return
-    try {
-      const nameParts = editingEmp.name.trim().split(" ")
-      const firstName = nameParts[0] || editingEmp.name
-      const lastName = nameParts.slice(1).join(" ") || "Employee"
-      await apiClient.put(`/employees/${editingEmp.id}`, {
-        firstName,
-        lastName,
-        email: editingEmp.email,
-        phone: editingEmp.phone,
-        systemRole: editingEmp.systemRole,
-      })
-    } catch (err) {
-      console.warn("Backend API PUT update completed/handled:", err)
-    }
-    const updated = updateStoredEmployee(editingEmp, originalEmpId || undefined)
+    const updated = await updateStoredEmployee(editingEmp, originalEmpId || undefined)
     setEmployeesList(updated)
     setEditingEmp(null)
     setOriginalEmpId(null)

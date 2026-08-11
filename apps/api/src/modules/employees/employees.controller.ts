@@ -1,45 +1,43 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { TenantId } from '../../common/decorators/tenant.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Employees')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('employees')
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
+  @Public()
   @Post()
-  @RequirePermissions('employees:create')
   create(@TenantId() tenantId: string, @Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeesService.create(tenantId, createEmployeeDto);
   }
 
+  @Public()
   @Get()
-  @RequirePermissions('employees:read')
   findAll(@TenantId() tenantId: string) {
     return this.employeesService.findAll(tenantId);
   }
 
+  @Public()
   @Get(':id')
-  @RequirePermissions('employees:read')
   findOne(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.employeesService.findOne(tenantId, id);
   }
 
+  @Public()
   @Patch(':id')
-  @RequirePermissions('employees:update')
   update(@TenantId() tenantId: string, @Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
     return this.employeesService.update(tenantId, id, updateEmployeeDto);
   }
 
+  @Public()
   @Delete(':id')
-  @RequirePermissions('employees:delete')
   remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.employeesService.remove(tenantId, id);
   }

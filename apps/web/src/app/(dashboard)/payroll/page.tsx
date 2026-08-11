@@ -75,24 +75,26 @@ export default function PayrollPage() {
       employeeName: emp.name,
       employeeEmail: emp.email,
       month: payMonth,
-      gross: `₹${calculatedGross.toLocaleString("en-IN")}`,
+      basicPay: `₹${basicNum.toLocaleString("en-IN")}`,
+      allowances: `₹${(hraNum + specialNum).toLocaleString("en-IN")}`,
       deductions: `₹${calculatedDeductions.toLocaleString("en-IN")}`,
+      netPay: `₹${calculatedNet.toLocaleString("en-IN")}`,
+      gross: `₹${calculatedGross.toLocaleString("en-IN")}`,
       net: `₹${calculatedNet.toLocaleString("en-IN")}`,
       status: "Paid",
       date: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
-      basicPay: `₹${basicNum.toLocaleString("en-IN")}`,
+      issuedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
       hra: `₹${hraNum.toLocaleString("en-IN")}`,
       specialAllowance: `₹${specialNum.toLocaleString("en-IN")}`,
       pfDeduction: `₹${pfNum.toLocaleString("en-IN")}`,
       tdsDeduction: `₹${tdsNum.toLocaleString("en-IN")}`,
     }
 
-    const updated = addStoredPayslip(newSlip)
-    setPayslips(updated)
+    addStoredPayslip(newSlip)
+    setPayslips(getStoredPayslips())
 
     // Publish isolated target notification exclusively to target employee
     addTargetNotification({
-      id: `NOTIF-${Date.now()}`,
       targetEmail: emp.email.toLowerCase(),
       title: "🎉 New Salary Slip Issued!",
       message: `Your official salary slip for ${payMonth} has been issued. Total Net Payable: ₹${calculatedNet.toLocaleString("en-IN")}.`,

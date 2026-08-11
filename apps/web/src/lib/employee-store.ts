@@ -1,5 +1,8 @@
 "use client"
 
+import { useState, useEffect, useCallback } from "react"
+import { apiClient } from "./api-client"
+
 export type SystemAccessRole = "Employee" | "Super_admin" | "Admin" | "HR"
 
 export interface UploadedDocRecord {
@@ -64,167 +67,194 @@ export const VERIFICATION_DOCUMENTS_LIST: VerificationDocSpec[] = [
   { id: "updated_resume", title: "Updated Resume", mandatory: false, description: "Latest CV/Resume in PDF/DOCX format" },
 ]
 
-const STORAGE_KEY = "kenzo_hrms_employees_store"
-
 export const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
   {
     id: "EMP-1001",
     name: "Ankit Sethi",
     email: "Ankit.sethi@kenzoinfosystems.com",
-    password: "kenzo123",
     role: "CEO & Founder",
     systemRole: "Super_admin",
     dept: "Management",
     status: "Active",
     joinDate: "Jan 01, 2020",
     phone: "+91 98100 12345",
-    address: "Executive Suite 401, Tech Park, Noida",
-    permanentAddress: "Sector 62, Noida, UP 201301",
-    emergencyPhone: "+91 98100 99999",
-    personalEmail: "ankit.sethi@example.com",
-    govtIdType: "Aadhaar",
-    govtIdValue: "4589 1234 5678",
-    maritalStatus: "Married",
-    dependentNominee: "Spouse",
-    dependentNomineeDob: "1990-05-15",
-    qualification: "MBA / B.Tech Computer Science",
-    scoreCard: "Executive Rating (98/100)",
-    medicalIssues: "None",
-    medication: "None",
-    medicalHistory: "Annual executive health checkup clear",
-    documents: "Verified (Aadhaar, Passport, Qualification)",
-    uploadedDocuments: {
-      aadhaar_card: { fileName: "Aadhaar_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
-      pan_card: { fileName: "PAN_AnkitSethi.pdf", fileUrl: "#", uploadedAt: "Jan 02, 2020", status: "Verified" },
-    },
   },
   {
     id: "EMP-1002",
     name: "Sujal Kumar",
     email: "Sujal.kumar@kenzoinfosystems.com",
-    password: "kenzo123",
     role: "Software Engineer",
     systemRole: "Employee",
     dept: "Engineering",
     status: "Active",
     joinDate: "Jan 15, 2024",
     phone: "6207210784",
-    address: "A2 B59 Near Hanuman mandir phase 1 Aayanagar , New Delhi",
-    permanentAddress: "DT-10 Dusadh Mhaulla , Chatti baazar Ramgarh cant ,Jharkhand",
-    emergencyPhone: "9835123735",
-    personalEmail: "sujalreal983@gmail.com",
-    govtIdType: "Adhaar",
-    govtIdValue: "591730412902",
-    maritalStatus: "Single",
-    dependentNominee: "Parent / Child Nominee",
-    dependentNomineeDob: "2000-01-01",
-    qualification: "B.Tech Computer Science",
-    scoreCard: "Performance Rating (95/100)",
-    medicalIssues: "None",
-    medication: "None",
-    medicalHistory: "Clean medical history notes",
-    documents: "Verified (Adhaar ID, Technical Certifications, Degree)",
-    uploadedDocuments: {
-      aadhaar_card: { fileName: "Aadhaar_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
-      pan_card: { fileName: "PAN_SujalKumar.pdf", fileUrl: "#", uploadedAt: "Jan 16, 2024", status: "Verified" },
-    },
   },
   {
     id: "EMP-1003",
     name: "Chanchal Saini",
     email: "Chanchal.saini@kenzoinfosystems.com",
-    password: "kenzo123",
     role: "Managing Director",
     systemRole: "Admin",
     dept: "Administration",
     status: "Active",
     joinDate: "Aug 07, 2026",
     phone: "+91 98100 99887",
-    address: "Mayur Vihar Phase 1, New Delhi",
-    permanentAddress: "New Delhi 110091",
-    govtIdType: "Aadhaar",
-    govtIdValue: "8899 1122 3344",
   },
   {
     id: "EMP-1004",
     name: "Jitender Saini",
     email: "Jitender.saini@kenzoinfosystems.com",
-    password: "kenzo123",
     role: "CEO",
     systemRole: "Super_admin",
     dept: "Administration",
     status: "Active",
     joinDate: "Aug 07, 2026",
     phone: "+91 98100 77665",
-    address: "Mayur Vihar Phase 1, New Delhi",
-    permanentAddress: "New Delhi 110091",
-    govtIdType: "Aadhaar",
-    govtIdValue: "7788 2233 4455",
   },
   {
     id: "EMP-1005",
     name: "Laxmi Narayan",
     email: "Laxminarayan.ojha@kenzoinfosystems.com",
-    password: "kenzo123",
     role: "Field Sales Executive",
     systemRole: "Employee",
     dept: "Sales",
     status: "Active",
     joinDate: "Aug 06, 2026",
     phone: "+91 98100 33221",
-    address: "Sector 18, Noida",
-    permanentAddress: "Noida UP 201301",
-    govtIdType: "Aadhaar",
-    govtIdValue: "3344 5566 7788",
   },
 ]
 
-export function getStoredEmployees(): EmployeeRecord[] {
-  if (typeof window === "undefined") return DEFAULT_EMPLOYEES
+let inMemoryEmployeesCache: EmployeeRecord[] = DEFAULT_EMPLOYEES
+const LISTENERS = new Set<() => void>()
+
+function notifyListeners() {
+  LISTENERS.forEach(cb => cb())
+}
+
+export async function fetchEmployeesFromApi(): Promise<EmployeeRecord[]> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as EmployeeRecord[]
-      if (parsed && parsed.length > 0 && parsed.some(e => e.email.toLowerCase() === "chanchal.saini@kenzoinfosystems.com")) return parsed
+    const raw = await apiClient.get<Record<string, unknown>[] >('/employees')
+    if (Array.isArray(raw) && raw.length > 0) {
+      const mapped: EmployeeRecord[] = (raw as Record<string, unknown>[]).map(e => {
+        const dept = (e.department as Record<string, unknown>) || {}
+        const desig = (e.designation as Record<string, unknown>) || {}
+        const u = (e.user as Record<string, unknown>) || {}
+        const uRoles = (u.userRoles as Record<string, unknown>[]) || []
+        const rObj = (uRoles[0]?.role as Record<string, unknown>) || {}
+
+        return {
+          id: String(e.employeeCode || e.id || ''),
+          name: `${String(e.firstName || '')} ${String(e.lastName || '')}`.trim() || 'Employee',
+          email: String(e.workEmail || ''),
+          role: String(desig.name || 'Employee'),
+          systemRole: (rObj.name || 'Employee') as SystemAccessRole,
+          dept: String(dept.name || 'General'),
+          status: e.employmentStatus === 'active' || e.employmentStatus === 'Active' ? 'Active' : String(e.employmentStatus || 'Active'),
+          joinDate: e.dateOfJoining ? new Date(String(e.dateOfJoining)).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Jan 01, 2024',
+          phone: String(e.phone || ''),
+        }
+      })
+      inMemoryEmployeesCache = mapped
+      notifyListeners()
+      return mapped
     }
-  } catch {
-    // Fallback
+  } catch (err) {
+    console.warn("Error fetching employees from Neon DB API:", err)
   }
-  saveStoredEmployees(DEFAULT_EMPLOYEES)
-  return DEFAULT_EMPLOYEES
+  return inMemoryEmployeesCache
+}
+
+export function getStoredEmployees(): EmployeeRecord[] {
+  return inMemoryEmployeesCache
 }
 
 export function saveStoredEmployees(list: EmployeeRecord[]) {
-  if (typeof window === "undefined") return
+  inMemoryEmployeesCache = list
+  notifyListeners()
+}
+
+export async function addStoredEmployee(emp: Partial<EmployeeRecord>): Promise<EmployeeRecord[]> {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
-  } catch {
-    // Fallback
+    const nameParts = (emp.name || '').split(' ')
+    const firstName = nameParts[0] || 'New'
+    const lastName = nameParts.slice(1).join(' ') || 'Employee'
+
+    await apiClient.post('/employees', {
+      firstName,
+      lastName,
+      email: emp.email,
+      password: emp.password,
+      phone: emp.phone,
+      employmentType: emp.status || 'Active',
+      systemRole: emp.systemRole || 'Employee',
+    })
+    return await fetchEmployeesFromApi()
+  } catch (err) {
+    console.warn("Failed to create employee on Neon DB API:", err)
+    return inMemoryEmployeesCache
   }
 }
 
-export function addStoredEmployee(emp: EmployeeRecord) {
-  const current = getStoredEmployees()
-  const updated = [emp, ...current]
-  saveStoredEmployees(updated)
-  return updated
-}
-
-export function updateStoredEmployee(emp: EmployeeRecord, oldId?: string) {
-  const current = getStoredEmployees()
-  const updated = current.map(e => {
-    if ((oldId && e.id === oldId) || e.id === emp.id || e.email.toLowerCase() === emp.email.toLowerCase()) {
-      return { ...e, ...emp }
+export async function updateStoredEmployee(emp: Partial<EmployeeRecord>, oldId?: string): Promise<EmployeeRecord[]> {
+  try {
+    const targetId = oldId || emp.id
+    if (targetId) {
+      const nameParts = (emp.name || '').split(' ')
+      await apiClient.patch(`/employees/${targetId}`, {
+        firstName: nameParts[0] || emp.name,
+        lastName: nameParts.slice(1).join(' ') || '',
+        phone: emp.phone,
+        employmentType: emp.status,
+      })
     }
-    return e
-  })
-  saveStoredEmployees(updated)
-  return updated
+    return await fetchEmployeesFromApi()
+  } catch (err) {
+    console.warn("Failed to update employee on Neon DB API:", err)
+    return inMemoryEmployeesCache
+  }
 }
 
-export function deleteStoredEmployee(id: string) {
-  const current = getStoredEmployees()
-  const updated = current.filter(e => e.id !== id)
-  saveStoredEmployees(updated)
-  return updated
+export async function deleteStoredEmployee(id: string): Promise<EmployeeRecord[]> {
+  try {
+    await apiClient.delete(`/employees/${id}`)
+    return await fetchEmployeesFromApi()
+  } catch (err) {
+    console.warn("Failed to delete employee on Neon DB API:", err)
+    return inMemoryEmployeesCache
+  }
+}
+
+export function useEmployees() {
+  const [employees, setEmployees] = useState<EmployeeRecord[]>(inMemoryEmployeesCache)
+
+  const reload = useCallback(() => {
+    fetchEmployeesFromApi().then(data => {
+      setEmployees([...data])
+    })
+  }, [])
+
+  useEffect(() => {
+    reload()
+
+    // 3-second real-time polling loop for multi-device sync
+    const interval = setInterval(() => {
+      fetchEmployeesFromApi().then(data => {
+        setEmployees([...data])
+      })
+    }, 3000)
+
+    const handleListener = () => {
+      setEmployees([...inMemoryEmployeesCache])
+    }
+
+    LISTENERS.add(handleListener)
+
+    return () => {
+      clearInterval(interval)
+      LISTENERS.delete(handleListener)
+    }
+  }, [reload])
+
+  return [employees, setEmployees] as const
 }

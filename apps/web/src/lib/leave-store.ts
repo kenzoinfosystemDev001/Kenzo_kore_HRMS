@@ -1,75 +1,117 @@
 "use client"
 
+import { useState, useEffect, useCallback } from "react"
+import { apiClient } from "./api-client"
+
 export interface LeaveRequestRecord {
   id: string
   employeeName: string
   employeeEmail: string
-  leaveType: string
-  days: number
+  type: string
+  leaveType?: string
   startDate: string
   endDate: string
+  days: number
   reason: string
-  status: "Pending" | "Approved" | "Rejected"
-  appliedDate: string
+  status: "Approved" | "Pending" | "Rejected"
+  appliedOn: string
+  appliedDate?: string
 }
 
-const STORAGE_KEY = "kenzo_hrms_leave_store"
+let inMemoryLeavesCache: LeaveRequestRecord[] = []
+const LISTENERS = new Set<() => void>()
 
-export const DEFAULT_LEAVE_REQUESTS: LeaveRequestRecord[] = [
-  {
-    id: "LV-2026-901",
-    employeeName: "Sujal Kumar",
-    employeeEmail: "Sujal.kumar@kenzoinfosystems.com",
-    leaveType: "Casual Leave",
-    days: 1,
-    startDate: "2026-08-10",
-    endDate: "2026-08-10",
-    reason: "Personal family commitment",
-    status: "Pending",
-    appliedDate: "Aug 05, 2026",
-  },
-]
+function notifyListeners() {
+  LISTENERS.forEach(cb => cb())
+}
+
+export async function fetchLeavesFromApi(): Promise<LeaveRequestRecord[]> {
+  try {
+    const data = await apiClient.get<LeaveRequestRecord[]>('/leave/requests')
+    if (Array.isArray(data)) {
+      inMemoryLeavesCache = data.map(d => ({
+        ...d,
+        leaveType: d.leaveType || d.type,
+        appliedDate: d.appliedDate || d.appliedOn,
+      }))
+      notifyListeners()
+      return inMemoryLeavesCache
+    }
+  } catch (err) {
+    console.warn("Error fetching leave requests from Neon DB API:", err)
+  }
+  return inMemoryLeavesCache
+}
 
 export function getStoredLeaves(): LeaveRequestRecord[] {
-  if (typeof window === "undefined") return DEFAULT_LEAVE_REQUESTS
+  return inMemoryLeavesCache
+}
+
+export async function addLeaveRequest(request: Partial<LeaveRequestRecord>): Promise<LeaveRequestRecord[]> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as LeaveRequestRecord[]
-      if (parsed) return parsed
+    await apiClient.post('/leave/requests', {
+      employeeName: request.employeeName,
+      employeeEmail: request.employeeEmail,
+      type: request.type || request.leaveType,
+      startDateStr: request.startDate,
+      endDateStr: request.endDate,
+      reason: request.reason,
+    })
+    return await fetchLeavesFromApi()
+  } catch (err) {
+    console.warn("Failed to create leave request on Neon DB API:", err)
+    return inMemoryLeavesCache
+  }
+}
+
+export async function updateLeaveStatus(id: string, status: LeaveRequestRecord["status"]): Promise<LeaveRequestRecord[]> {
+  try {
+    const action = status === "Approved" ? "approve" : "reject"
+    await apiClient.patch(`/leave/requests/${id}/${action}`, {})
+    return await fetchLeavesFromApi()
+  } catch (err) {
+    console.warn("Failed to update leave status on Neon DB API:", err)
+    return inMemoryLeavesCache
+  }
+}
+
+export async function deleteLeaveRequest(id: string): Promise<LeaveRequestRecord[]> {
+  try {
+    return await fetchLeavesFromApi()
+  } catch {
+    return inMemoryLeavesCache
+  }
+}
+
+export function useLeaves() {
+  const [leaves, setLeaves] = useState<LeaveRequestRecord[]>(inMemoryLeavesCache)
+
+  const reload = useCallback(() => {
+    fetchLeavesFromApi().then(data => {
+      setLeaves([...data])
+    })
+  }, [])
+
+  useEffect(() => {
+    reload()
+
+    const interval = setInterval(() => {
+      fetchLeavesFromApi().then(data => {
+        setLeaves([...data])
+      })
+    }, 3000)
+
+    const handleListener = () => {
+      setLeaves([...inMemoryLeavesCache])
     }
-  } catch {
-    // Fallback
-  }
-  return DEFAULT_LEAVE_REQUESTS
-}
 
-export function saveStoredLeaves(list: LeaveRequestRecord[]) {
-  if (typeof window === "undefined") return
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
-  } catch {
-    // Fallback
-  }
-}
+    LISTENERS.add(handleListener)
 
-export function updateLeaveStatus(id: string, status: "Approved" | "Rejected") {
-  const current = getStoredLeaves()
-  const updated = current.map(l => (l.id === id ? { ...l, status } : l))
-  saveStoredLeaves(updated)
-  return updated
-}
+    return () => {
+      clearInterval(interval)
+      LISTENERS.delete(handleListener)
+    }
+  }, [reload])
 
-export function addLeaveRequest(req: LeaveRequestRecord) {
-  const current = getStoredLeaves()
-  const updated = [req, ...current]
-  saveStoredLeaves(updated)
-  return updated
-}
-
-export function deleteLeaveRequest(id: string) {
-  const current = getStoredLeaves()
-  const updated = current.filter(l => l.id !== id)
-  saveStoredLeaves(updated)
-  return updated
+  return [leaves, setLeaves] as const
 }

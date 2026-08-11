@@ -48,7 +48,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { HeadphonesIcon } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { getStoredEmployees, updateStoredEmployee, EmployeeRecord, VERIFICATION_DOCUMENTS_LIST, UploadedDocRecord } from "@/lib/employee-store"
-import { getStoredLeaves, updateLeaveStatus, addLeaveRequest, deleteLeaveRequest, LeaveRequestRecord } from "@/lib/leave-store"
+import { fetchLeavesFromApi, getStoredLeaves, updateLeaveStatus, addLeaveRequest, deleteLeaveRequest, LeaveRequestRecord } from "@/lib/leave-store"
 import { getStoredPayslips, PayslipRecord } from "@/lib/payslip-store"
 import { getNotificationsForUser, markNotificationAsRead, addTargetNotification, UserNotification } from "@/lib/notification-store"
 import { getUnreadMessagesCount } from "@/lib/message-store"
@@ -160,16 +160,16 @@ export default function DashboardPage() {
     ? getNotificationsForUser(user.email).filter(n => !n.isRead && !dismissedNotifIds.includes(n.id))
     : [])
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (id: string) => {
     const target = leaves.find(l => l.id === id)
-    const updated = updateLeaveStatus(id, "Approved")
+    const updated = await updateLeaveStatus(id, "Approved")
     setLeaves(updated)
 
     if (target) {
       addTargetNotification({
         targetEmail: target.employeeEmail.toLowerCase(),
         title: "🎉 Leave Application Approved!",
-        message: `Your ${target.leaveType} application (${target.startDate} to ${target.endDate}) has been APPROVED by Admin.`,
+        message: `Your ${target.leaveType || target.type} application (${target.startDate} to ${target.endDate}) has been APPROVED by Admin.`,
         type: "LEAVE",
         date: new Date().toLocaleDateString(),
         isRead: false,
@@ -177,16 +177,16 @@ export default function DashboardPage() {
     }
   }
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
     const target = leaves.find(l => l.id === id)
-    const updated = updateLeaveStatus(id, "Rejected")
+    const updated = await updateLeaveStatus(id, "Rejected")
     setLeaves(updated)
 
     if (target) {
       addTargetNotification({
         targetEmail: target.employeeEmail.toLowerCase(),
         title: "❌ Leave Application Update",
-        message: `Your ${target.leaveType} application (${target.startDate} to ${target.endDate}) was rejected by Admin.`,
+        message: `Your ${target.leaveType || target.type} application (${target.startDate} to ${target.endDate}) was rejected by Admin.`,
         type: "LEAVE",
         date: new Date().toLocaleDateString(),
         isRead: false,
@@ -194,17 +194,17 @@ export default function DashboardPage() {
     }
   }
 
-  const handleDeleteLeave = (id: string) => {
-    const updated = deleteLeaveRequest(id)
+  const handleDeleteLeave = async (id: string) => {
+    const updated = await deleteLeaveRequest(id)
     setLeaves(updated)
   }
 
-  const handleApproveAll = () => {
-    let updated = leaves
-    pendingLeaves.forEach(l => {
-      updated = updateLeaveStatus(l.id, "Approved")
-    })
-    setLeaves(updated)
+  const handleApproveAll = async () => {
+    for (const l of pendingLeaves) {
+      await updateLeaveStatus(l.id, "Approved")
+    }
+    const fresh = await fetchLeavesFromApi()
+    setLeaves(fresh)
   }
 
   const handleClockToggle = () => {
@@ -217,7 +217,7 @@ export default function DashboardPage() {
     }
   }
 
-  const handleApplyLeave = (e: React.FormEvent) => {
+  const handleApplyLeave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!startDate || !endDate) return
 
@@ -225,16 +225,18 @@ export default function DashboardPage() {
       id: `LV-2026-${Math.floor(100 + Math.random() * 900)}`,
       employeeName: user?.name || "Sujal Kumar",
       employeeEmail: user?.email || "employee@kenzo.com",
+      type: leaveType,
       leaveType,
       days: 1,
       startDate,
       endDate,
       reason: reason || "Personal leave request",
       status: "Pending",
+      appliedOn: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
       appliedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
     }
 
-    const updated = addLeaveRequest(newReq)
+    const updated = await addLeaveRequest(newReq)
     setLeaves(updated)
     setIsApplyOpen(false)
     setReason("")

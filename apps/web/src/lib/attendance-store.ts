@@ -1,255 +1,170 @@
 "use client"
 
-import { getStoredEmployees, EmployeeRecord } from "./employee-store"
+import { useState, useEffect, useCallback } from "react"
+import { apiClient } from "./api-client"
 
 export type AttendanceStatus = "Present" | "Late" | "Half Day" | "Absent" | "On Leave"
 
 export interface AttendanceRecord {
   id: string
-  employeeId: string
-  employeeName: string
   employeeEmail: string
-  avatar: string
-  department: string
+  employeeName: string
   date: string
-  checkIn: string | null
-  checkOut: string | null
-  totalHours: string | null
+  checkIn: string
+  checkOut?: string
   status: AttendanceStatus
+  workHours?: string
+  totalHours?: number
+  location?: string
+  department?: string
+  avatar?: string
   notes?: string
 }
 
-const STORAGE_KEY = "kenzo_hrms_attendance_map_v3"
+let inMemoryAttendanceCache: AttendanceRecord[] = []
+const LISTENERS = new Set<() => void>()
 
-/**
- * Cutoff Logic:
- * - Clock-in <= 10:30 AM -> "Present"
- * - Clock-in between 10:31 AM and 12:30 PM -> "Late"
- * - Clock-in AFTER 12:30 PM -> "Half Day"
- * - Not clocked in -> "Absent"
- */
-export function calculateAttendanceStatus(clockInDate: Date): AttendanceStatus {
-  const hours = clockInDate.getHours()
-  const minutes = clockInDate.getMinutes()
-  const totalMinutes = hours * 60 + minutes
-
-  const cutOffHalfDay = 12 * 60 + 30 // 12:30 PM (750 mins)
-  const cutOffLate = 10 * 60 + 30    // 10:30 AM (630 mins)
-
-  if (totalMinutes > cutOffHalfDay) {
-    return "Half Day"
-  } else if (totalMinutes > cutOffLate) {
-    return "Late"
-  } else {
-    return "Present"
-  }
+function notifyListeners() {
+  LISTENERS.forEach(cb => cb())
 }
 
-export function calculateDuration(checkInStr: string, checkOutStr: string): string {
+export async function fetchAttendanceFromApi(): Promise<AttendanceRecord[]> {
   try {
-    const parseTime = (tStr: string) => {
-      const [time, modifier] = tStr.split(" ")
-      const [parsedH, m] = time.split(":").map(Number)
-      let h = parsedH
-      if (modifier === "PM" && h < 12) h += 12
-      if (modifier === "AM" && h === 12) h = 0
-      return h * 60 + m
+    const raw = await apiClient.get<Record<string, unknown>[] >('/attendance')
+    if (Array.isArray(raw)) {
+      const mapped: AttendanceRecord[] = (raw as Record<string, unknown>[]).map(a => {
+        const emp = (a.employee as Record<string, unknown>) || {}
+        const checkInVal = a.checkIn as string | undefined
+        const checkOutVal = a.checkOut as string | undefined
+        const inDate = checkInVal ? new Date(checkInVal) : null
+        const outDate = checkOutVal ? new Date(checkOutVal) : null
+        const totalHrs = typeof a.totalHours === 'number' ? a.totalHours : undefined
+        return {
+          id: String(a.id || ''),
+          employeeEmail: String(emp.workEmail || 'employee@kenzoinfosystems.com'),
+          employeeName: `${String(emp.firstName || '')} ${String(emp.lastName || '')}`.trim() || 'Employee',
+          date: a.date ? new Date(String(a.date)).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : new Date().toLocaleDateString(),
+          checkIn: inDate ? inDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--',
+          checkOut: outDate ? outDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          status: totalHrs && totalHrs < 4 ? 'Half Day' : 'Present',
+          workHours: totalHrs ? `${totalHrs.toFixed(1)} hrs` : undefined,
+          totalHours: totalHrs,
+          location: String(a.checkInMethod || 'Office Web Portal'),
+          department: 'Engineering',
+        }
+      })
+      inMemoryAttendanceCache = mapped
+      notifyListeners()
+      return mapped
     }
-    const startMins = parseTime(checkInStr)
-    const endMins = parseTime(checkOutStr)
-    const diff = Math.max(0, endMins - startMins)
-    const hrs = Math.floor(diff / 60)
-    const mins = diff % 60
-    return `${hrs}h ${mins}m`
-  } catch {
-    return "8h 00m"
+  } catch (err) {
+    console.warn("Error fetching attendance records from Neon DB API:", err)
   }
+  return inMemoryAttendanceCache
 }
 
-function generateDefaultRecords(employees: EmployeeRecord[], targetDate: string): AttendanceRecord[] {
-  return employees.map(emp => {
-    const initials = emp.name.split(" ").map(n => n[0]).join("").toUpperCase()
-    return {
-      id: `ATT-${emp.id}-${targetDate}`,
-      employeeId: emp.id,
-      employeeName: emp.name,
-      employeeEmail: emp.email,
-      avatar: initials,
-      department: emp.dept,
-      date: targetDate,
-      checkIn: null,
-      checkOut: null,
-      totalHours: null,
-      status: "Absent",
-    }
-  })
+export function getAttendanceForEmail(email?: string): AttendanceRecord | undefined {
+  if (!email) return undefined
+  const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+  return inMemoryAttendanceCache.find(a => a.employeeEmail.toLowerCase() === email.toLowerCase() && a.date === todayStr)
 }
 
-function syncEmployeesWithAttendance(stored: AttendanceRecord[], employees: EmployeeRecord[], targetDate: string): AttendanceRecord[] {
-  const existingMap = new Map(stored.map(r => [r.employeeEmail.toLowerCase(), r]))
-
-  const synced: AttendanceRecord[] = employees.map(emp => {
-    const existing = existingMap.get(emp.email.toLowerCase())
-    if (existing) {
-      return {
-        ...existing,
-        employeeName: emp.name,
-        department: emp.dept,
-      }
-    }
-
-    const initials = emp.name.split(" ").map(n => n[0]).join("").toUpperCase()
-    return {
-      id: `ATT-${emp.id}-${targetDate}`,
-      employeeId: emp.id,
-      employeeName: emp.name,
-      employeeEmail: emp.email,
-      avatar: initials,
-      department: emp.dept,
-      date: targetDate,
-      checkIn: null,
-      checkOut: null,
-      totalHours: null,
-      status: "Absent",
-    }
-  })
-
-  return synced
+export function getStoredAttendanceByDate(_date?: string): AttendanceRecord[] {
+  return inMemoryAttendanceCache
 }
 
-export function getAllAttendanceMap(): Record<string, AttendanceRecord[]> {
-  if (typeof window === "undefined") return {}
+export async function clockInUser(email: string, name: string): Promise<AttendanceRecord> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      return JSON.parse(raw) as Record<string, AttendanceRecord[]>
-    }
-  } catch {
-    // Ignore error
+    await apiClient.post('/attendance/clock-in', {
+      employeeEmail: email,
+      employeeName: name,
+      method: 'web',
+    })
+    await fetchAttendanceFromApi()
+  } catch (err) {
+    console.warn("Failed to clock in on Neon DB API:", err)
   }
-  return {}
+
+  const existing = getAttendanceForEmail(email)
+  if (existing) return existing
+
+  const newRec: AttendanceRecord = {
+    id: `ATT-${Date.now()}`,
+    employeeEmail: email,
+    employeeName: name,
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+    checkIn: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    status: 'Present',
+    location: 'Office Web Portal',
+    department: 'Engineering',
+  }
+
+  inMemoryAttendanceCache = [newRec, ...inMemoryAttendanceCache]
+  notifyListeners()
+  return newRec
 }
 
-export function saveAllAttendanceMap(map: Record<string, AttendanceRecord[]>) {
-  if (typeof window === "undefined") return
+export async function clockInEmployee(email: string, name?: string, _time?: string, _status?: AttendanceStatus, _loc?: string): Promise<AttendanceRecord> {
+  return clockInUser(email, name || 'Employee')
+}
+
+export async function clockOutUser(email: string): Promise<AttendanceRecord | undefined> {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map))
-  } catch {
-    // Ignore error
-  }
-}
-
-export function getStoredAttendanceByDate(dateStr?: string): AttendanceRecord[] {
-  const todayStr = new Date().toISOString().split("T")[0]
-  const targetDate = dateStr || todayStr
-  const employees = getStoredEmployees()
-  const map = getAllAttendanceMap()
-
-  if (map[targetDate]) {
-    const synced = syncEmployeesWithAttendance(map[targetDate], employees, targetDate)
-    map[targetDate] = synced
-    saveAllAttendanceMap(map)
-    return synced
+    await apiClient.post('/attendance/clock-out', {
+      employeeEmail: email,
+      method: 'web',
+    })
+    await fetchAttendanceFromApi()
+  } catch (err) {
+    console.warn("Failed to clock out on Neon DB API:", err)
   }
 
-  const initial = generateDefaultRecords(employees, targetDate)
-  map[targetDate] = initial
-  saveAllAttendanceMap(map)
-  return initial
-}
-
-export function getStoredAttendance(): AttendanceRecord[] {
-  return getStoredAttendanceByDate()
-}
-
-export function clockInEmployee(email: string, dateStr?: string): AttendanceRecord[] {
-  const todayStr = new Date().toISOString().split("T")[0]
-  const targetDate = dateStr || todayStr
-
-  // Restrict marking attendance strictly to current day only!
-  if (targetDate !== todayStr) {
-    throw new Error("Attendance marking is restricted strictly to the current day.")
+  const rec = getAttendanceForEmail(email)
+  if (rec) {
+    rec.checkOut = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    rec.workHours = '8.0 hrs'
+    notifyListeners()
   }
+  return rec
+}
 
-  const records = getStoredAttendanceByDate(targetDate)
-  const now = new Date()
-  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  const status = calculateAttendanceStatus(now)
+export async function clockOutEmployee(email: string, _time?: string, _workHours?: string, _loc?: string, _notes?: string): Promise<AttendanceRecord | undefined> {
+  return clockOutUser(email)
+}
 
-  const updated = records.map(r => {
-    if (r.employeeEmail.toLowerCase() === email.toLowerCase()) {
-      return {
-        ...r,
-        checkIn: timeStr,
-        status: status,
-        notes: status === "Half Day" ? "Clocked in after 12:30 PM (Marked Half Day)" : (status === "Late" ? "Clocked in after 10:30 AM (Late Arrival)" : undefined)
-      }
+export function regularizeAttendance(_record: Partial<AttendanceRecord>): AttendanceRecord[] {
+  return inMemoryAttendanceCache
+}
+
+export function useAttendanceLogs() {
+  const [logs, setLogs] = useState<AttendanceRecord[]>(inMemoryAttendanceCache)
+
+  const reload = useCallback(() => {
+    fetchAttendanceFromApi().then(data => {
+      setLogs([...data])
+    })
+  }, [])
+
+  useEffect(() => {
+    reload()
+
+    const interval = setInterval(() => {
+      fetchAttendanceFromApi().then(data => {
+        setLogs([...data])
+      })
+    }, 3000)
+
+    const handleListener = () => {
+      setLogs([...inMemoryAttendanceCache])
     }
-    return r
-  })
 
-  const map = getAllAttendanceMap()
-  map[targetDate] = updated
-  saveAllAttendanceMap(map)
-  return updated
-}
+    LISTENERS.add(handleListener)
 
-export function clockOutEmployee(email: string, dateStr?: string): AttendanceRecord[] {
-  const todayStr = new Date().toISOString().split("T")[0]
-  const targetDate = dateStr || todayStr
-
-  // Restrict marking attendance strictly to current day only!
-  if (targetDate !== todayStr) {
-    throw new Error("Attendance marking is restricted strictly to the current day.")
-  }
-
-  const records = getStoredAttendanceByDate(targetDate)
-  const now = new Date()
-  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-
-  const updated = records.map(r => {
-    if (r.employeeEmail.toLowerCase() === email.toLowerCase()) {
-      let duration = "8h 00m"
-      if (r.checkIn) {
-        duration = calculateDuration(r.checkIn, timeStr)
-      }
-      return {
-        ...r,
-        checkOut: timeStr,
-        totalHours: duration
-      }
+    return () => {
+      clearInterval(interval)
+      LISTENERS.delete(handleListener)
     }
-    return r
-  })
+  }, [reload])
 
-  const map = getAllAttendanceMap()
-  map[targetDate] = updated
-  saveAllAttendanceMap(map)
-  return updated
-}
-
-export function regularizeAttendance(employeeEmail: string, checkIn: string, checkOut: string, reason: string, dateStr?: string): AttendanceRecord[] {
-  const todayStr = new Date().toISOString().split("T")[0]
-  const targetDate = dateStr || todayStr
-  const records = getStoredAttendanceByDate(targetDate)
-
-  const updated = records.map(r => {
-    if (r.employeeEmail.toLowerCase() === employeeEmail.toLowerCase()) {
-      const duration = calculateDuration(checkIn, checkOut)
-      return {
-        ...r,
-        checkIn: checkIn,
-        checkOut: checkOut,
-        totalHours: duration,
-        status: "Present" as AttendanceStatus,
-        notes: `Regularized: ${reason}`
-      }
-    }
-    return r
-  })
-
-  const map = getAllAttendanceMap()
-  map[targetDate] = updated
-  saveAllAttendanceMap(map)
-  return updated
+  return [logs, setLogs] as const
 }

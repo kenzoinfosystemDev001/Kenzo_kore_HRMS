@@ -99,19 +99,20 @@ export default function AttendancePage() {
   const handleRegularizeSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!regEmpEmail || !regCheckIn || !regCheckOut) return
-    regularizeAttendance(regEmpEmail, regCheckIn, regCheckOut, regReason || "Official Field Work", selectedDate)
+    regularizeAttendance({ employeeEmail: regEmpEmail, checkIn: regCheckIn, checkOut: regCheckOut, notes: regReason || "Official Field Work" })
     setIsRegOpen(false)
     setRegReason("")
   }
 
   // Filtered List over visible isolated records
   const filteredRecords = visibleRecords.filter(r => {
+    const deptStr = r.department || ""
     const matchesSearch = 
       r.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.employeeEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.department.toLowerCase().includes(searchTerm.toLowerCase())
+      deptStr.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesDept = selectedDept === "all" || r.department.toLowerCase().includes(selectedDept.toLowerCase())
+    const matchesDept = selectedDept === "all" || deptStr.toLowerCase().includes(selectedDept.toLowerCase())
     const matchesStatus = selectedStatus === "all" || r.status === selectedStatus
 
     return matchesSearch && matchesDept && matchesStatus

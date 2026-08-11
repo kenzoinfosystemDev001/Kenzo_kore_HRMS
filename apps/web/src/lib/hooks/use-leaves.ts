@@ -9,8 +9,8 @@ export function useLeaves() {
     queryKey: ['leaves'],
     queryFn: async () => {
       try {
-        const data = await apiClient.get<{ data: LeaveRequestRecord[] }>('/leaves')
-        return data.data || data
+        const data = await apiClient.get<LeaveRequestRecord[]>('/leave/requests')
+        return Array.isArray(data) ? data : getStoredLeaves()
       } catch {
         return getStoredLeaves()
       }
@@ -24,22 +24,24 @@ export function useCreateLeave() {
   return useMutation({
     mutationFn: async (leave: Partial<LeaveRequestRecord>) => {
       try {
-        return await apiClient.post('/leaves', leave)
+        return await apiClient.post('/leave/requests', leave)
       } catch {
         const newLeave: LeaveRequestRecord = {
           id: `LV-${Math.floor(1000 + Math.random() * 9000)}`,
           employeeName: leave.employeeName || '',
           employeeEmail: leave.employeeEmail || '',
-          leaveType: leave.leaveType || 'Casual Leave',
+          type: leave.type || leave.leaveType || 'Casual Leave',
+          leaveType: leave.leaveType || leave.type || 'Casual Leave',
           days: leave.days || 1,
           startDate: leave.startDate || new Date().toISOString(),
           endDate: leave.endDate || new Date().toISOString(),
           reason: leave.reason || '',
           status: 'Pending',
+          appliedOn: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
           appliedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
           ...leave,
         } as LeaveRequestRecord
-        addLeaveRequest(newLeave)
+        await addLeaveRequest(newLeave)
         return newLeave
       }
     },
@@ -52,9 +54,10 @@ export function useUpdateLeaveStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "Approved" | "Rejected" }) => {
       try {
-        return await apiClient.put(`/leaves/${id}`, { status })
+        const action = status === "Approved" ? "approve" : "reject"
+        return await apiClient.patch(`/leave/requests/${id}/${action}`, {})
       } catch {
-        updateLeaveStatus(id, status)
+        await updateLeaveStatus(id, status)
         return { id, status }
       }
     },

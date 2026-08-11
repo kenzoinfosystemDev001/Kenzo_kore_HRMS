@@ -70,7 +70,7 @@ export function Header({ onMobileMenuToggle }: { onMobileMenuToggle?: () => void
   const unreadMessagesCount = getUnreadMessagesCount(user?.email)
 
   // Notifications State
-  const userNotifications: UserNotification[] = getNotificationsForUser(user?.email)
+  const userNotifications: UserNotification[] = getNotificationsForUser(user?.email || "")
   const unreadCount = userNotifications.filter(n => !n.isRead).length
 
   const handleOpenChat = (open: boolean) => {

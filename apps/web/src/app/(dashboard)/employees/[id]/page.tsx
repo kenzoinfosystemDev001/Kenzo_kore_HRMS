@@ -84,14 +84,14 @@ export default function EmployeeProfilePage() {
   const isSelf = user?.email?.toLowerCase() === currentEmp.email.toLowerCase()
   const canAccessConfidential = isAdmin || isSelf
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentEmp) return
     const updated: EmployeeRecord = {
       ...currentEmp,
       ...formData,
     }
-    const newList = updateStoredEmployee(updated, currentEmp.id)
+    const newList = await updateStoredEmployee(updated, currentEmp.id)
     setEmployeesList(newList)
     setIsEditOpen(false)
   }
@@ -100,7 +100,7 @@ export default function EmployeeProfilePage() {
   const handleFileUpload = (docId: string, file: File) => {
     if (!file) return
     const reader = new FileReader()
-    reader.onloadend = () => {
+    reader.onloadend = async () => {
       const fileUrl = reader.result as string
       const nowStr = new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
       
@@ -119,14 +119,14 @@ export default function EmployeeProfilePage() {
         uploadedDocuments: updatedDocs,
       }
 
-      const newList = updateStoredEmployee(updatedEmp, currentEmp.id)
+      const newList = await updateStoredEmployee(updatedEmp, currentEmp.id)
       setEmployeesList(newList)
     }
     reader.readAsDataURL(file)
   }
 
   // Handle Document Deletion
-  const handleDeleteDoc = (docId: string) => {
+  const handleDeleteDoc = async (docId: string) => {
     const existingUploaded = { ...(currentEmp.uploadedDocuments || {}) }
     delete existingUploaded[docId]
 
@@ -135,7 +135,7 @@ export default function EmployeeProfilePage() {
       uploadedDocuments: existingUploaded,
     }
 
-    const newList = updateStoredEmployee(updatedEmp, currentEmp.id)
+    const newList = await updateStoredEmployee(updatedEmp, currentEmp.id)
     setEmployeesList(newList)
   }
 

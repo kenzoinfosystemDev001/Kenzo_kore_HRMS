@@ -9,8 +9,8 @@ export function usePayslips() {
     queryKey: ['payslips'],
     queryFn: async () => {
       try {
-        const data = await apiClient.get<{ data: PayslipRecord[] }>('/payslips')
-        return data.data || data
+        const data = await apiClient.get<PayslipRecord[]>('/payroll/payslips')
+        return Array.isArray(data) ? data : getStoredPayslips()
       } catch {
         return getStoredPayslips()
       }
@@ -24,19 +24,22 @@ export function useCreatePayslip() {
   return useMutation({
     mutationFn: async (payslip: Partial<PayslipRecord>) => {
       try {
-        return await apiClient.post('/payslips', payslip)
+        return await apiClient.post('/payroll/payslips/generate', payslip)
       } catch {
         const newPayslip: PayslipRecord = {
           id: `PAY-${Math.floor(1000 + Math.random() * 9000)}`,
           employeeName: payslip.employeeName || '',
           employeeEmail: payslip.employeeEmail || '',
           month: payslip.month || '',
-          gross: payslip.gross || '0',
+          basicPay: payslip.basicPay || '0',
+          allowances: payslip.allowances || '0',
           deductions: payslip.deductions || '0',
+          netPay: payslip.netPay || payslip.net || '0',
+          gross: payslip.gross || '0',
           net: payslip.net || '0',
           status: payslip.status || 'Paid',
           date: payslip.date || new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-          basicPay: payslip.basicPay || '0',
+          issuedDate: payslip.issuedDate || payslip.date || new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
           hra: payslip.hra || '0',
           specialAllowance: payslip.specialAllowance || '0',
           pfDeduction: payslip.pfDeduction || '0',

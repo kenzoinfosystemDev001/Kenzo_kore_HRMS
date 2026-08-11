@@ -31,16 +31,16 @@ export default function LeaveManagementPage() {
   const [endDate, setEndDate] = useState("")
   const [reason, setReason] = useState("")
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (id: string) => {
     const target = leaves.find(l => l.id === id)
-    const updated = updateLeaveStatus(id, "Approved")
+    const updated = await updateLeaveStatus(id, "Approved")
     setLeaves(updated)
 
     if (target) {
       addTargetNotification({
         targetEmail: target.employeeEmail.toLowerCase(),
         title: "🎉 Leave Application Approved!",
-        message: `Your ${target.leaveType} application (${target.startDate} to ${target.endDate}) has been APPROVED by Admin.`,
+        message: `Your ${target.leaveType || target.type} application (${target.startDate} to ${target.endDate}) has been APPROVED by Admin.`,
         type: "LEAVE",
         date: new Date().toLocaleDateString(),
         isRead: false,
@@ -48,16 +48,16 @@ export default function LeaveManagementPage() {
     }
   }
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
     const target = leaves.find(l => l.id === id)
-    const updated = updateLeaveStatus(id, "Rejected")
+    const updated = await updateLeaveStatus(id, "Rejected")
     setLeaves(updated)
 
     if (target) {
       addTargetNotification({
         targetEmail: target.employeeEmail.toLowerCase(),
         title: "❌ Leave Application Update",
-        message: `Your ${target.leaveType} application (${target.startDate} to ${target.endDate}) was rejected by Admin.`,
+        message: `Your ${target.leaveType || target.type} application (${target.startDate} to ${target.endDate}) was rejected by Admin.`,
         type: "LEAVE",
         date: new Date().toLocaleDateString(),
         isRead: false,
@@ -65,12 +65,12 @@ export default function LeaveManagementPage() {
     }
   }
 
-  const handleDelete = (id: string) => {
-    const updated = deleteLeaveRequest(id)
+  const handleDelete = async (id: string) => {
+    const updated = await deleteLeaveRequest(id)
     setLeaves(updated)
   }
 
-  const handleApplyLeave = (e: React.FormEvent) => {
+  const handleApplyLeave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!startDate || !endDate) return
 
@@ -78,16 +78,18 @@ export default function LeaveManagementPage() {
       id: `LV-2026-${Math.floor(100 + Math.random() * 900)}`,
       employeeName: user?.name || "Employee",
       employeeEmail: user?.email || "employee@kenzo.com",
+      type: leaveType,
       leaveType,
       days: 1,
       startDate,
       endDate,
       reason: reason || "Personal leave request",
       status: "Pending",
+      appliedOn: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
       appliedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
     }
 
-    const updated = addLeaveRequest(newReq)
+    const updated = await addLeaveRequest(newReq)
     setLeaves(updated)
     setIsApplyOpen(false)
     setReason("")

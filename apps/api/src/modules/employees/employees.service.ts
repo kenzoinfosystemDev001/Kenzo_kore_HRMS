@@ -10,7 +10,15 @@ import { normalizeSystemRole, SystemRole } from '../../common/enums/system-role.
 export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(tenantId: string, createEmployeeDto: CreateEmployeeDto) {
+  private async resolveTenantId(tenantId?: string) {
+    if (tenantId) return tenantId;
+    const tenant = await this.prisma.tenant.findFirst();
+    if (!tenant) throw new NotFoundException('Tenant not found');
+    return tenant.id;
+  }
+
+  async create(tenantId: string | undefined, createEmployeeDto: CreateEmployeeDto) {
+    const tid = await this.resolveTenantId(tenantId);
     const { 
       firstName, 
       lastName, 
@@ -32,50 +40,44 @@ export class EmployeesService {
       throw new ConflictException('Work email address is required');
     }
 
-    // Use atomic Prisma transaction so database write is all-or-nothing
     return this.prisma.$transaction(async (tx) => {
-      // 1. Check duplicate email in PostgreSQL
       const existingUser = await tx.user.findFirst({
-        where: { tenantId, email: normalizedEmail },
+        where: { tenantId: tid, email: normalizedEmail },
       });
 
       if (existingUser) {
         throw new ConflictException('An account with this email address already exists in database');
       }
 
-      // 2. Securely hash password using bcrypt (cryptographically random temporary password if missing)
       const pwd = password && password.trim() ? password.trim() : crypto.randomBytes(8).toString('hex');
       const passwordHash = await bcrypt.hash(pwd, 10);
 
-      // 3. Resolve Tenant Organization
-      let org = await tx.organization.findFirst({ where: { tenantId } });
+      let org = await tx.organization.findFirst({ where: { tenantId: tid } });
       if (!org) {
-        const tenant = await tx.tenant.findUnique({ where: { id: tenantId } });
+        const tenant = await tx.tenant.findUnique({ where: { id: tid } });
         if (!tenant) throw new NotFoundException('Tenant not found');
         org = await tx.organization.create({
-          data: { tenantId, name: tenant.name },
+          data: { tenantId: tid, name: tenant.name },
         });
       }
 
-      // 4. Generate collision-safe employee code
       let finalCode = employeeCode?.trim();
       if (!finalCode) {
-        const count = await tx.employee.count({ where: { tenantId } });
+        const count = await tx.employee.count({ where: { tenantId: tid } });
         finalCode = `EMP-${1000 + count + 1}`;
 
-        let existsCode = await tx.employee.findFirst({ where: { tenantId, employeeCode: finalCode } });
+        let existsCode = await tx.employee.findFirst({ where: { tenantId: tid, employeeCode: finalCode } });
         let attempts = 0;
         while (existsCode && attempts < 10) {
           attempts++;
           finalCode = `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
-          existsCode = await tx.employee.findFirst({ where: { tenantId, employeeCode: finalCode } });
+          existsCode = await tx.employee.findFirst({ where: { tenantId: tid, employeeCode: finalCode } });
         }
       }
 
-      // 5. Create Employee Record in PostgreSQL
       const employee = await tx.employee.create({
         data: {
-          tenantId,
+          tenantId: tid,
           organizationId: org.id,
           employeeCode: finalCode,
           firstName,
@@ -90,7 +92,6 @@ export class EmployeesService {
         },
       });
 
-      // 6. Map Role via Canonical Enum & Create User Account in PostgreSQL
       const canonRole = normalizeSystemRole(systemRole);
       let targetSlug = 'employee';
       let targetName = 'Employee';
@@ -107,13 +108,13 @@ export class EmployeesService {
       }
 
       let roleRecord = await tx.role.findFirst({
-        where: { tenantId, slug: targetSlug },
+        where: { tenantId: tid, slug: targetSlug },
       });
 
       if (!roleRecord) {
         roleRecord = await tx.role.create({
           data: {
-            tenantId,
+            tenantId: tid,
             name: targetName,
             slug: targetSlug,
             isSystemRole: true,
@@ -123,7 +124,7 @@ export class EmployeesService {
 
       const user = await tx.user.create({
         data: {
-          tenantId,
+          tenantId: tid,
           email: normalizedEmail,
           passwordHash,
           firstName,
@@ -136,10 +137,9 @@ export class EmployeesService {
         },
       });
 
-      // 7. Audit Log Entry
       await tx.auditLog.create({
         data: {
-          tenantId,
+          tenantId: tid,
           userId: user.id,
           action: 'EMPLOYEE_CREATED',
           entityType: 'Employee',
@@ -152,32 +152,37 @@ export class EmployeesService {
     });
   }
 
-  async findAll(tenantId: string) {
+  async findAll(tenantId?: string) {
+    const tid = await this.resolveTenantId(tenantId);
     return this.prisma.employee.findMany({
-      where: { tenantId, deletedAt: null },
+      where: { tenantId: tid, deletedAt: null },
       include: { department: true, designation: true },
+      orderBy: { createdAt: 'asc' },
     });
   }
 
-  async findOne(tenantId: string, id: string) {
+  async findOne(tenantId: string | undefined, id: string) {
+    const tid = await this.resolveTenantId(tenantId);
     const employee = await this.prisma.employee.findFirst({
-      where: { id, tenantId, deletedAt: null },
+      where: { id, tenantId: tid, deletedAt: null },
       include: { department: true, designation: true, team: true, branch: true },
     });
     if (!employee) throw new NotFoundException('Employee not found');
     return employee;
   }
 
-  async update(tenantId: string, id: string, updateEmployeeDto: UpdateEmployeeDto) {
-    await this.findOne(tenantId, id); // check exists
+  async update(tenantId: string | undefined, id: string, updateEmployeeDto: UpdateEmployeeDto) {
+    const tid = await this.resolveTenantId(tenantId);
+    await this.findOne(tid, id); // check exists
     return this.prisma.employee.update({
       where: { id },
       data: updateEmployeeDto,
     });
   }
 
-  async remove(tenantId: string, id: string) {
-    await this.findOne(tenantId, id); // check exists
+  async remove(tenantId: string | undefined, id: string) {
+    const tid = await this.resolveTenantId(tenantId);
+    await this.findOne(tid, id); // check exists
     return this.prisma.employee.update({
       where: { id },
       data: { deletedAt: new Date() },
