@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -10,11 +10,9 @@ import { normalizeSystemRole, SystemRole } from '../../common/enums/system-role.
 export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async resolveTenantId(tenantId?: string) {
+  private resolveTenantId(tenantId?: string) {
     if (tenantId) return tenantId;
-    const tenant = await this.prisma.tenant.findFirst();
-    if (!tenant) throw new NotFoundException('Tenant not found');
-    return tenant.id;
+    throw new UnauthorizedException('Tenant context is required');
   }
 
   async create(tenantId: string | undefined, createEmployeeDto: CreateEmployeeDto) {
@@ -49,6 +47,16 @@ export class EmployeesService {
         throw new ConflictException('An account with this email address already exists in database');
       }
 
+      if (departmentId) {
+        const deptExists = await tx.department.findFirst({ where: { id: departmentId, tenantId: tid } });
+        if (!deptExists) throw new NotFoundException('Specified department does not exist in tenant');
+      }
+
+      if (designationId) {
+        const desigExists = await tx.designation.findFirst({ where: { id: designationId, tenantId: tid } });
+        if (!desigExists) throw new NotFoundException('Specified designation does not exist in tenant');
+      }
+
       const pwd = password && password.trim() ? password.trim() : crypto.randomBytes(8).toString('hex');
       const passwordHash = await bcrypt.hash(pwd, 10);
 
@@ -64,14 +72,19 @@ export class EmployeesService {
       let finalCode = employeeCode?.trim();
       if (!finalCode) {
         const count = await tx.employee.count({ where: { tenantId: tid } });
-        finalCode = `EMP-${1000 + count + 1}`;
+        let seq = count + 1;
+        finalCode = `EMP-${String(seq).padStart(5, '0')}`;
 
         let existsCode = await tx.employee.findFirst({ where: { tenantId: tid, employeeCode: finalCode } });
-        let attempts = 0;
-        while (existsCode && attempts < 10) {
-          attempts++;
-          finalCode = `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
+        while (existsCode) {
+          seq++;
+          finalCode = `EMP-${String(seq).padStart(5, '0')}`;
           existsCode = await tx.employee.findFirst({ where: { tenantId: tid, employeeCode: finalCode } });
+        }
+      } else {
+        const existsCode = await tx.employee.findFirst({ where: { tenantId: tid, employeeCode: finalCode } });
+        if (existsCode) {
+          throw new ConflictException(`Employee code '${finalCode}' already exists for this tenant`);
         }
       }
 

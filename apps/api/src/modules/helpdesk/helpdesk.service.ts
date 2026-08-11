@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 
@@ -6,11 +6,9 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 export class HelpdeskService {
   constructor(private prisma: PrismaService) {}
 
-  private async resolveTenantId(tenantId?: string) {
+  private resolveTenantId(tenantId?: string) {
     if (tenantId) return tenantId;
-    const tenant = await this.prisma.tenant.findFirst();
-    if (!tenant) throw new NotFoundException('Tenant not found');
-    return tenant.id;
+    throw new UnauthorizedException('Tenant context is required');
   }
 
   async getTickets(tenantId?: string) {

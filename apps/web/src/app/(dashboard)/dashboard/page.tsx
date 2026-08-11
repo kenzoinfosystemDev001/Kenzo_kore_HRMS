@@ -47,7 +47,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { HeadphonesIcon } from "lucide-react"
 import { useAuth } from "@/lib/auth"
-import { getStoredEmployees, updateStoredEmployee, EmployeeRecord, VERIFICATION_DOCUMENTS_LIST, UploadedDocRecord } from "@/lib/employee-store"
+import { useEmployees, useUpdateEmployee } from "@/lib/hooks/use-employees"
+import { EmployeeRecord, VERIFICATION_DOCUMENTS_LIST, UploadedDocRecord } from "@/lib/employee-store"
 import { fetchLeavesFromApi, getStoredLeaves, updateLeaveStatus, addLeaveRequest, deleteLeaveRequest, LeaveRequestRecord } from "@/lib/leave-store"
 import { getStoredPayslips, PayslipRecord } from "@/lib/payslip-store"
 import { getNotificationsForUser, markNotificationAsRead, addTargetNotification, UserNotification } from "@/lib/notification-store"
@@ -63,6 +64,8 @@ const COLORS = ["#3B82F6", "#6366F1", "#EC4899", "#8B5CF6", "#10B981", "#F59E0B"
 export default function DashboardPage() {
   const { user, isAdmin } = useAuth()
   const router = useRouter()
+  const { data: employees = [] } = useEmployees()
+  const updateMutation = useUpdateEmployee()
 
   // Real-Time Live Clock (Ticks every 1 second)
   const [liveTime, setLiveTime] = useState<string>("")
@@ -75,7 +78,6 @@ export default function DashboardPage() {
     const timer = setInterval(updateTime, 1000)
     return () => clearInterval(timer)
   }, [])
-  const [employees] = useState<EmployeeRecord[]>(() => getStoredEmployees())
   const [leaves, setLeaves] = useState<LeaveRequestRecord[]>(() => getStoredLeaves())
   const [payslips] = useState<PayslipRecord[]>(() => getStoredPayslips())
   const [dismissedNotifIds, setDismissedNotifIds] = useState<string[]>([])
@@ -437,7 +439,7 @@ export default function DashboardPage() {
                                                   ...myEmpRecord,
                                                   uploadedDocuments: updatedDocs,
                                                 }
-                                                updateStoredEmployee(updatedEmp, myEmpRecord.id)
+                                                updateMutation.mutate({ id: myEmpRecord.id, data: updatedEmp })
                                                 alert(`Uploaded ${doc.title} successfully!`)
                                               }
                                               reader.readAsDataURL(file)
@@ -476,7 +478,7 @@ export default function DashboardPage() {
                             qualification: (formData.get("qualification") as string) || myEmpRecord.qualification,
                             medicalHistory: (formData.get("medicalHistory") as string) || myEmpRecord.medicalHistory,
                           }
-                          updateStoredEmployee(updatedEmp, myEmpRecord.id)
+                          updateMutation.mutate({ id: myEmpRecord.id, data: updatedEmp })
                           alert("Profile details saved successfully!")
                         }} className="space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

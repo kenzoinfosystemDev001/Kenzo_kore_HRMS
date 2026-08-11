@@ -28,6 +28,7 @@ class ApiClient {
 
     const response = await fetch(`${API_BASE}${endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`}`, {
       ...fetchOptions,
+      credentials: 'include',
       headers,
     })
 

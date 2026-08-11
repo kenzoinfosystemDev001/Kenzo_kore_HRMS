@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/lib/auth"
-import { getStoredEmployees, EmployeeRecord } from "@/lib/employee-store"
+import { useEmployees } from "@/lib/hooks/use-employees"
+import { EmployeeRecord } from "@/lib/employee-store"
 import {
   getStoredDepartments,
   addDepartment,
@@ -31,7 +32,7 @@ import {
 
 export default function OrganizationPage() {
   const { isAdmin } = useAuth()
-  const [employees] = useState<EmployeeRecord[]>(() => getStoredEmployees())
+  const { data: employees = [] } = useEmployees()
   const [departments, setDepartments] = useState<DepartmentRecord[]>(() => getStoredDepartments())
   const [teams, setTeams] = useState<TeamRecord[]>(() => getStoredTeams())
   const [designations, setDesignations] = useState<DesignationRecord[]>(() => getStoredDesignations())

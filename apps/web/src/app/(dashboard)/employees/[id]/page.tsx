@@ -32,9 +32,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/lib/auth"
+import { useEmployees, useUpdateEmployee } from "@/lib/hooks/use-employees"
 import { 
-  getStoredEmployees, 
-  updateStoredEmployee, 
   EmployeeRecord, 
   VERIFICATION_DOCUMENTS_LIST, 
   UploadedDocRecord 
@@ -45,14 +44,14 @@ export default function EmployeeProfilePage() {
   const routeId = (params?.id as string) || ""
   const { user, isAdmin } = useAuth()
 
-  const [employeesList, setEmployeesList] = React.useState<EmployeeRecord[]>(() => getStoredEmployees())
+  const { data: employeesList = [] } = useEmployees()
+  const updateMutation = useUpdateEmployee()
   
   const currentEmp = React.useMemo(() => {
-    const list = employeesList && employeesList.length > 0 ? employeesList : getStoredEmployees()
     const decodedRoute = routeId ? decodeURIComponent(routeId).toLowerCase() : ""
 
     if (decodedRoute) {
-      const match = list.find(e => 
+      const match = employeesList.find(e => 
         e.id.toLowerCase() === decodedRoute || 
         e.email.toLowerCase() === decodedRoute
       )
@@ -60,11 +59,11 @@ export default function EmployeeProfilePage() {
     }
 
     if (user?.email) {
-      const matchUser = list.find(e => e.email.toLowerCase() === user.email.toLowerCase() || e.id.toLowerCase() === user.id?.toLowerCase())
+      const matchUser = employeesList.find(e => e.email.toLowerCase() === user.email.toLowerCase() || e.id.toLowerCase() === user.id?.toLowerCase())
       if (matchUser) return matchUser
     }
 
-    return list.find(e => e.email.toLowerCase() === "sujal.kumar@kenzoinfosystems.com") || list[0]
+    return employeesList[0]
   }, [employeesList, routeId, user])
 
   const [isEditOpen, setIsEditOpen] = React.useState(false)
@@ -87,13 +86,15 @@ export default function EmployeeProfilePage() {
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentEmp) return
-    const updated: EmployeeRecord = {
-      ...currentEmp,
-      ...formData,
+    try {
+      await updateMutation.mutateAsync({
+        id: currentEmp.id,
+        data: formData,
+      })
+      setIsEditOpen(false)
+    } catch (err: any) {
+      alert(err.message || "Failed to update profile on server")
     }
-    const newList = await updateStoredEmployee(updated, currentEmp.id)
-    setEmployeesList(newList)
-    setIsEditOpen(false)
   }
 
   // Handle Document File Upload
@@ -119,8 +120,10 @@ export default function EmployeeProfilePage() {
         uploadedDocuments: updatedDocs,
       }
 
-      const newList = await updateStoredEmployee(updatedEmp, currentEmp.id)
-      setEmployeesList(newList)
+      await updateMutation.mutateAsync({
+        id: currentEmp.id,
+        data: updatedEmp,
+      })
     }
     reader.readAsDataURL(file)
   }
@@ -135,8 +138,10 @@ export default function EmployeeProfilePage() {
       uploadedDocuments: existingUploaded,
     }
 
-    const newList = await updateStoredEmployee(updatedEmp, currentEmp.id)
-    setEmployeesList(newList)
+    await updateMutation.mutateAsync({
+      id: currentEmp.id,
+      data: updatedEmp,
+    })
   }
 
   // Calculate Verification Progress

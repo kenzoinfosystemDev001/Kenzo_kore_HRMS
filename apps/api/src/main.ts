@@ -6,6 +6,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,6 +14,7 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   
   app.use(helmet());
+  app.use(cookieParser());
   app.enableShutdownHooks();
 
   app.setGlobalPrefix('api', { exclude: ['/', '/health'] });

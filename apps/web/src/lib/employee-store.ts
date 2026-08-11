@@ -40,8 +40,13 @@ export interface EmployeeRecord {
   dept: string
   status: "Active" | "On Leave" | "Inactive" | "Terminated"
   joinDate: string
+  firstName?: string
+  lastName?: string
+  workEmail?: string
   phone?: string
+  workPhone?: string
   avatarUrl?: string
+  avatar?: string
   emergencyPhone?: string
   personalEmail?: string
   maritalStatus?: string
@@ -57,6 +62,14 @@ export interface EmployeeRecord {
   qualification?: string
   scoreCard?: string
   uploadedDocuments?: Record<string, UploadedDocRecord>
+  departmentId?: string
+  designationId?: string
+  designation?: string
+  code?: string
+  employeeCode?: string
+  employmentType?: string
+  reportingManager?: string
+  workLocation?: string
 }
 
 let inMemoryEmployeesCache: EmployeeRecord[] = []

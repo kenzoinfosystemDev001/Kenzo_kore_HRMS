@@ -1,6 +1,6 @@
 "use client"
 
-import { getStoredEmployees } from "./employee-store"
+import { EmployeeRecord } from "./employee-store"
 
 export interface ChatMessage {
   id: string
@@ -102,8 +102,8 @@ export function markMessagesAsRead(userEmail?: string, senderEmail?: string) {
  * If user is a regular employee (!isAdmin), return ALL Admin & HR Management leaders with explicit names & designations!
  * If user is an Admin (isAdmin), return all employees and admins.
  */
-export function getAvailableChatRecipients(isUserAdmin: boolean, currentEmail?: string): { email: string; name: string; role: string }[] {
-  const allEmployees = getStoredEmployees()
+export function getAvailableChatRecipients(isUserAdmin: boolean, currentEmail?: string, employees: EmployeeRecord[] = []): { email: string; name: string; role: string }[] {
+  const allEmployees = employees
   
   // Explicit Admin & HR Management Leadership List
   const adminRecipients = [

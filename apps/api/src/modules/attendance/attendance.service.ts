@@ -1,15 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
 export class AttendanceService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async resolveTenantId(tenantId?: string) {
+  private resolveTenantId(tenantId?: string) {
     if (tenantId) return tenantId;
-    const tenant = await this.prisma.tenant.findFirst();
-    if (!tenant) throw new NotFoundException('Tenant not found');
-    return tenant.id;
+    throw new UnauthorizedException('Tenant context is required');
   }
 
   async clockIn(tenantId: string | undefined, employeeEmailOrId: string | undefined, data: any) {

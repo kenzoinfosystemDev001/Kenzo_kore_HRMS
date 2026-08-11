@@ -14,13 +14,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import { useAuth } from "@/lib/auth"
-import { getStoredEmployees, EmployeeRecord } from "@/lib/employee-store"
+import { useEmployees } from "@/lib/hooks/use-employees"
+import { EmployeeRecord } from "@/lib/employee-store"
 import { getStoredPayslips, addStoredPayslip, PayslipRecord } from "@/lib/payslip-store"
 import { addTargetNotification, getNotificationsForUser, markNotificationAsRead } from "@/lib/notification-store"
 
 export default function PayrollPage() {
   const { user, isAdmin } = useAuth()
-  const [employees] = useState<EmployeeRecord[]>(() => getStoredEmployees())
+  const { data: employees = [] } = useEmployees()
   const [payslips, setPayslips] = useState<PayslipRecord[]>(() => getStoredPayslips())
   const [selectedPayslip, setSelectedPayslip] = useState<PayslipRecord | null>(null)
   const [isGenerateOpen, setIsGenerateOpen] = useState(false)

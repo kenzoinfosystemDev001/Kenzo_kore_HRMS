@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { Users, Plus, Download, Edit, Trash2, Eye, ShieldCheck } from "lucide-react"
+import { Users, Plus, Download, Edit, Trash2, Eye, ShieldCheck, AlertCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,20 +16,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/lib/auth"
 import { apiClient } from "@/lib/api-client"
 import {
-  getStoredEmployees,
-  addStoredEmployee,
-  updateStoredEmployee,
-  deleteStoredEmployee,
-  EmployeeRecord,
-  SystemAccessRole,
-} from "@/lib/employee-store"
+  useEmployees,
+  useCreateEmployee,
+  useUpdateEmployee,
+  useDeleteEmployee,
+} from "@/lib/hooks/use-employees"
+import { EmployeeRecord, SystemAccessRole } from "@/lib/employee-store"
 
 export default function EmployeesPage() {
   const { user, isAdmin } = useAuth()
-  const [employeesList, setEmployeesList] = useState<EmployeeRecord[]>(() => getStoredEmployees())
+  const { data: employeesList = [], isLoading, isError, error } = useEmployees()
+  const createMutation = useCreateEmployee()
+  const updateMutation = useUpdateEmployee()
+  const deleteMutation = useDeleteEmployee()
+
   const [searchTerm, setSearchTerm] = useState("")
   const [editingEmp, setEditingEmp] = useState<EmployeeRecord | null>(null)
   const [originalEmpId, setOriginalEmpId] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
   // New Employee Modal State
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -41,66 +45,74 @@ export default function EmployeesPage() {
   const [newDept, setNewDept] = useState("Engineering")
   const [newJoinDate, setNewJoinDate] = useState("")
   const [newSystemRole, setNewSystemRole] = useState<SystemAccessRole>("Employee")
+
   const handleDelete = async (id: string) => {
     try {
-      await apiClient.delete(`/employees/${id}`)
-    } catch (err) {
-      console.warn("Backend API delete failed or offline mode:", err)
+      await deleteMutation.mutateAsync(id)
+    } catch (err: any) {
+      alert(err.message || "Failed to delete employee")
     }
-    const updated = await deleteStoredEmployee(id)
-    setEmployeesList(updated)
   }
 
   const handleCreateEmployee = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newName || !newEmail) return
+    setFormError(null)
 
-    const formattedJoinDate = newJoinDate
-      ? new Date(newJoinDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-      : new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-
-    const assignedId = newEmpId.trim() ? newEmpId.trim() : `EMP-${Math.floor(1000 + Math.random() * 9000)}`
-
-    const newEmp: EmployeeRecord = {
-      id: assignedId,
-      name: newName,
-      email: newEmail.toLowerCase().trim(),
-      password: newPassword || "kenzo123",
-      role: newRole || (newSystemRole === "Employee" ? "Software Engineer" : newSystemRole),
-      systemRole: newSystemRole,
-      dept: newDept,
-      status: "Active",
-      joinDate: formattedJoinDate,
+    try {
+      await createMutation.mutateAsync({
+        name: newName,
+        workEmail: newEmail.toLowerCase().trim(),
+        email: newEmail.toLowerCase().trim(),
+        password: newPassword || "kenzo123",
+        role: newSystemRole,
+        dept: newDept,
+        code: newEmpId.trim() || undefined,
+      })
+      setNewEmpId("")
+      setNewName("")
+      setNewEmail("")
+      setNewPassword("kenzo123")
+      setNewRole("")
+      setNewJoinDate("")
+      setNewSystemRole("Employee")
+      setIsAddOpen(false)
+    } catch (err: any) {
+      setFormError(err.message || "Failed to create employee on server")
     }
-
-    const updated = await addStoredEmployee(newEmp)
-    setEmployeesList(updated)
-    setNewEmpId("")
-    setNewName("")
-    setNewEmail("")
-    setNewPassword("kenzo123")
-    setNewRole("")
-    setNewJoinDate("")
-    setNewSystemRole("Employee")
-    setIsAddOpen(false)
   }
 
   const handleSaveEdit = async () => {
     if (!editingEmp) return
-    const updated = await updateStoredEmployee(editingEmp, originalEmpId || undefined)
-    setEmployeesList(updated)
-    setEditingEmp(null)
-    setOriginalEmpId(null)
+    try {
+      await updateMutation.mutateAsync({
+        id: editingEmp.id,
+        data: editingEmp,
+      })
+      setEditingEmp(null)
+      setOriginalEmpId(null)
+    } catch (err: any) {
+      alert(err.message || "Failed to update employee")
+    }
   }
 
   const filteredList = employeesList.filter(e => 
     e.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     e.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.role.toLowerCase().includes(searchTerm.toLowerCase())
+    (e.role && e.role.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+      {isError && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-red-600 dark:text-red-400 flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <div>
+            <p className="font-semibold">Backend API Error</p>
+            <p className="text-sm">{(error as any)?.message || "Failed to load employees from server"}</p>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5 border-border">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2">
