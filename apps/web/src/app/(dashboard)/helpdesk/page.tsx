@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/lib/auth"
 import {
-  getStoredTickets,
+  useHelpdeskTickets,
   addStoredTicket,
   updateTicketStatus,
   deleteStoredTicket,
@@ -23,7 +23,7 @@ import { addTargetNotification } from "@/lib/notification-store"
 
 export default function HelpdeskPage() {
   const { user, isAdmin } = useAuth()
-  const [ticketsList, setTicketsList] = useState<HelpdeskTicketRecord[]>(() => getStoredTickets())
+  const [ticketsList, setTicketsList] = useHelpdeskTickets()
   const [searchTerm, setSearchTerm] = useState("")
 
   // Raise Ticket Modal State

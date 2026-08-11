@@ -52,7 +52,7 @@ import { getStoredLeaves, updateLeaveStatus, addLeaveRequest, deleteLeaveRequest
 import { getStoredPayslips, PayslipRecord } from "@/lib/payslip-store"
 import { getNotificationsForUser, markNotificationAsRead, addTargetNotification, UserNotification } from "@/lib/notification-store"
 import { getUnreadMessagesCount } from "@/lib/message-store"
-import { getStoredTickets, addStoredTicket, HelpdeskTicketRecord } from "@/lib/helpdesk-store"
+import { addStoredTicket, useHelpdeskTickets, HelpdeskTicketRecord } from "@/lib/helpdesk-store"
 
 import {
   attendanceData,
@@ -107,8 +107,8 @@ export default function DashboardPage() {
   const [appraisalNotes, setAppraisalNotes] = useState("")
   const [appraisalSubmitted, setAppraisalSubmitted] = useState(false)
 
-  // Helpdesk Tickets State
-  const [tickets, setTickets] = useState<HelpdeskTicketRecord[]>(() => getStoredTickets())
+  // Helpdesk Tickets State (Real-Time Synchronized)
+  const [tickets, setTickets] = useHelpdeskTickets()
   const [isHelpdeskOpen, setIsHelpdeskOpen] = useState(false)
   const [ticketCategory, setTicketCategory] = useState<HelpdeskTicketRecord["category"]>("IT & Tools Requirement")
   const [ticketSubject, setTicketSubject] = useState("")
