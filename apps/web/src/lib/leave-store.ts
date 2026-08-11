@@ -59,7 +59,7 @@ function notifyListeners() {
 export async function fetchLeavesFromApi(): Promise<LeaveRequestRecord[]> {
   try {
     const data = await apiClient.get<LeaveRequestRecord[]>('/leave/requests')
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data)) {
       inMemoryLeavesCache = data.map(d => ({
         ...d,
         leaveType: d.leaveType || d.type,
@@ -69,7 +69,7 @@ export async function fetchLeavesFromApi(): Promise<LeaveRequestRecord[]> {
       return inMemoryLeavesCache
     }
   } catch (err) {
-    console.warn("Error fetching leave requests from Neon DB API:", err)
+    console.warn("Error fetching leave requests from API:", err)
   }
   return inMemoryLeavesCache
 }

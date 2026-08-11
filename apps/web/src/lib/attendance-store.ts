@@ -48,7 +48,7 @@ export const INITIAL_ATTENDANCE: AttendanceRecord[] = [
   },
 ]
 
-let inMemoryAttendanceCache: AttendanceRecord[] = [...INITIAL_ATTENDANCE]
+let inMemoryAttendanceCache: AttendanceRecord[] = []
 const LISTENERS = new Set<() => void>()
 
 function notifyListeners() {
@@ -58,34 +58,25 @@ function notifyListeners() {
 export async function fetchAttendanceFromApi(): Promise<AttendanceRecord[]> {
   try {
     const raw = await apiClient.get<Record<string, unknown>[] >('/attendance')
-    if (Array.isArray(raw) && raw.length > 0) {
-      const mapped: AttendanceRecord[] = (raw as Record<string, unknown>[]).map(a => {
-        const emp = (a.employee as Record<string, unknown>) || {}
-        const checkInVal = a.checkIn as string | undefined
-        const checkOutVal = a.checkOut as string | undefined
-        const inDate = checkInVal ? new Date(checkInVal) : null
-        const outDate = checkOutVal ? new Date(checkOutVal) : null
-        const totalHrs = typeof a.totalHours === 'number' ? a.totalHours : undefined
-        return {
-          id: String(a.id || ''),
-          employeeEmail: String(emp.workEmail || 'employee@kenzoinfosystems.com'),
-          employeeName: `${String(emp.firstName || '')} ${String(emp.lastName || '')}`.trim() || 'Employee',
-          date: a.date ? new Date(String(a.date)).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : new Date().toLocaleDateString(),
-          checkIn: inDate ? inDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--',
-          checkOut: outDate ? outDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : undefined,
-          status: totalHrs && totalHrs < 4 ? 'Half Day' : 'Present',
-          workHours: totalHrs ? `${totalHrs.toFixed(1)} hrs` : undefined,
-          totalHours: totalHrs,
-          location: String(a.checkInMethod || 'Office Web Portal'),
-          department: 'Engineering',
-        }
-      })
+    if (Array.isArray(raw)) {
+      const mapped: AttendanceRecord[] = raw.map(a => ({
+        id: String(a.id || `ATT-${Math.random()}`),
+        employeeEmail: String(a.employeeEmail || ''),
+        employeeName: String(a.employeeName || 'Employee'),
+        date: String(a.date || new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })),
+        checkIn: a.checkIn ? String(a.checkIn) : undefined as unknown as string,
+        checkOut: a.checkOut ? String(a.checkOut) : undefined,
+        status: (a.status as AttendanceStatus) || 'Absent',
+        workHours: a.workHours ? String(a.workHours) : undefined,
+        location: String(a.location || 'Office Web Portal'),
+        department: String(a.department || 'General'),
+      }))
       inMemoryAttendanceCache = mapped
       notifyListeners()
       return mapped
     }
   } catch (err) {
-    console.warn("Error fetching attendance records from Neon DB API:", err)
+    console.warn("Error fetching attendance records from API:", err)
   }
   return inMemoryAttendanceCache
 }

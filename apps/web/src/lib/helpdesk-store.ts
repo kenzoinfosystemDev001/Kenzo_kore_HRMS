@@ -53,13 +53,13 @@ function notifyListeners() {
 export async function fetchTicketsFromApi(): Promise<HelpdeskTicketRecord[]> {
   try {
     const data = await apiClient.get<HelpdeskTicketRecord[]>('/helpdesk/tickets')
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data)) {
       inMemoryTicketsCache = data
       notifyListeners()
       return data
     }
   } catch (err) {
-    console.warn("Error fetching tickets from Neon DB API:", err)
+    console.warn("Error fetching tickets from API:", err)
   }
   return inMemoryTicketsCache
 }
