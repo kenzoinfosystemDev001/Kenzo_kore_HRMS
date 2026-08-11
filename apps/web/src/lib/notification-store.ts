@@ -5,7 +5,7 @@ export interface UserNotification {
   targetEmail: string
   title: string
   message: string
-  type: "PAYSLIP" | "APPRAISAL" | "LEAVE" | "EXPENSE" | "GENERAL"
+  type: "PAYSLIP" | "APPRAISAL" | "LEAVE" | "EXPENSE" | "GENERAL" | "HELP"
   payslipId?: string
   date: string
   isRead: boolean

@@ -23,6 +23,7 @@ import {
   User,
   Upload,
   FileCheck,
+  Plus,
 } from "lucide-react"
 import {
   AreaChart,
@@ -44,12 +45,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+import { HeadphonesIcon } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { getStoredEmployees, updateStoredEmployee, EmployeeRecord, VERIFICATION_DOCUMENTS_LIST, UploadedDocRecord } from "@/lib/employee-store"
 import { getStoredLeaves, updateLeaveStatus, addLeaveRequest, deleteLeaveRequest, LeaveRequestRecord } from "@/lib/leave-store"
 import { getStoredPayslips, PayslipRecord } from "@/lib/payslip-store"
 import { getNotificationsForUser, markNotificationAsRead, addTargetNotification, UserNotification } from "@/lib/notification-store"
 import { getUnreadMessagesCount } from "@/lib/message-store"
+import { getStoredTickets, addStoredTicket, HelpdeskTicketRecord } from "@/lib/helpdesk-store"
 
 import {
   attendanceData,
@@ -104,10 +107,53 @@ export default function DashboardPage() {
   const [appraisalNotes, setAppraisalNotes] = useState("")
   const [appraisalSubmitted, setAppraisalSubmitted] = useState(false)
 
+  // Helpdesk Tickets State
+  const [tickets, setTickets] = useState<HelpdeskTicketRecord[]>(() => getStoredTickets())
+  const [isHelpdeskOpen, setIsHelpdeskOpen] = useState(false)
+  const [ticketCategory, setTicketCategory] = useState<HelpdeskTicketRecord["category"]>("IT & Tools Requirement")
+  const [ticketSubject, setTicketSubject] = useState("")
+  const [ticketPriority, setTicketPriority] = useState<HelpdeskTicketRecord["priority"]>("Medium")
+  const [ticketDescription, setTicketDescription] = useState("")
+
   const pendingLeaves = leaves.filter(l => l.status === "Pending")
   const activeEmployees = employees.filter(e => e.status === "Active")
   const myLeavesList = leaves.filter(l => l.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
   const myPayslipsList = payslips.filter(p => p.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
+  const myTicketsList = tickets.filter(t => t.raisedByEmail.toLowerCase() === user?.email?.toLowerCase())
+
+  const handleRaiseDashboardTicket = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!ticketSubject.trim()) return
+
+    const newTicket: HelpdeskTicketRecord = {
+      id: `TICK-${Math.floor(1000 + Math.random() * 9000)}`,
+      subject: ticketSubject.trim(),
+      category: ticketCategory,
+      raisedBy: user?.name || "Employee",
+      raisedByEmail: user?.email || "employee@kenzoinfosystems.com",
+      assignedTo: ticketCategory.includes("IT") ? "IT Admin" : "Admin Team",
+      priority: ticketPriority,
+      status: "Open",
+      description: ticketDescription.trim() || "No additional notes provided.",
+      createdAt: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+    }
+
+    const updated = addStoredTicket(newTicket)
+    setTickets(updated)
+
+    addTargetNotification({
+      targetEmail: "ankit.sethi@kenzoinfosystems.com",
+      title: `🎫 New ${ticketCategory} Ticket (${newTicket.id})`,
+      message: `${user?.name || "Employee"} raised a ${ticketPriority} priority ticket: "${ticketSubject.trim()}"`,
+      type: "HELP",
+      date: new Date().toLocaleDateString(),
+      isRead: false,
+    })
+
+    setTicketSubject("")
+    setTicketDescription("")
+    setIsHelpdeskOpen(false)
+  }
 
   // Employee notifications
   const employeeUnreadNotifs: UserNotification[] = (user?.email
@@ -505,8 +551,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Top 3 Quick Action Cards for Employee */}
-        <div className="grid gap-6 md:grid-cols-3">
+        {/* Top 4 Quick Action Cards for Employee */}
+        <div className="grid gap-6 md:grid-cols-4">
           {/* Card 1: Mark Attendance */}
           <Card className="glass-card flex flex-col justify-between">
             <CardHeader className="pb-3">
@@ -643,6 +689,99 @@ export default function DashboardPage() {
               </Dialog>
             </CardContent>
           </Card>
+
+          {/* Card 4: Helpdesk & Support / Complaint Portal */}
+          <Card className="glass-card flex flex-col justify-between">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                  <HeadphonesIcon className="h-4 w-4 text-rose-500" /> Helpdesk & Complaints
+                </CardTitle>
+                <Badge className="bg-rose-500/10 text-rose-600 border-rose-500/20 font-bold">Admin Portal</Badge>
+              </div>
+              <CardDescription className="text-xs mt-1">
+                Raise IT tools requirement, equipment, or complaints.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Dialog open={isHelpdeskOpen} onOpenChange={setIsHelpdeskOpen}>
+                <DialogTrigger asChild>
+                  <Button className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md">
+                    <Plus className="mr-1 h-3.5 w-3.5" /> Raise Support Ticket / Complaint
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-foreground font-extrabold">
+                      <HeadphonesIcon className="h-5 w-5 text-rose-500" /> Raise Support Ticket / Complaint
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-muted-foreground">
+                      Submit your IT tools requirement, hardware issue, complaint, or salary issue. This will be routed directly to Admins.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleRaiseDashboardTicket} className="space-y-4 pt-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold text-foreground">Category / Support Type</Label>
+                      <Select value={ticketCategory} onValueChange={(val: HelpdeskTicketRecord["category"]) => setTicketCategory(val)}>
+                        <SelectTrigger className="bg-background text-xs font-semibold">
+                          <SelectValue placeholder="Select Category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="IT & Tools Requirement">IT & Tools Requirement</SelectItem>
+                          <SelectItem value="Equipment & Hardware">Equipment & Hardware</SelectItem>
+                          <SelectItem value="Help/Support">General Help / Support</SelectItem>
+                          <SelectItem value="Complaint/Grievance">Complaint / Grievance</SelectItem>
+                          <SelectItem value="Payroll & Salary Issue">Payroll & Salary Issue</SelectItem>
+                          <SelectItem value="General Inquiry">General Inquiry</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-bold text-foreground">Subject</Label>
+                        <Input
+                          value={ticketSubject}
+                          onChange={e => setTicketSubject(e.target.value)}
+                          placeholder="e.g. Docker license / Laptop repair"
+                          required
+                          className="text-xs bg-background text-foreground"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs font-bold text-foreground">Priority</Label>
+                        <Select value={ticketPriority} onValueChange={(val: HelpdeskTicketRecord["priority"]) => setTicketPriority(val)}>
+                          <SelectTrigger className="bg-background text-xs font-semibold">
+                            <SelectValue placeholder="Select Priority" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Low">Low</SelectItem>
+                            <SelectItem value="Medium">Medium</SelectItem>
+                            <SelectItem value="High">High</SelectItem>
+                            <SelectItem value="Urgent">Urgent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold text-foreground">Description & Details</Label>
+                      <Input
+                        value={ticketDescription}
+                        onChange={e => setTicketDescription(e.target.value)}
+                        placeholder="Explain your requirement or grievance..."
+                        className="text-xs bg-background text-foreground"
+                      />
+                    </div>
+
+                    <Button type="submit" className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md">
+                      Submit Ticket to Admin
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Lower Grid: My Recent Leave Requests & My Payslips */}
@@ -704,6 +843,52 @@ export default function DashboardPage() {
                 </a>
               </Button>
             </CardFooter>
+          </Card>
+
+          {/* My Submitted Helpdesk Tickets & Complaints Queue */}
+          <Card className="col-span-12 glass-card">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <HeadphonesIcon className="h-5 w-5 text-rose-500" /> My Submitted Helpdesk Tickets & Complaints
+                </CardTitle>
+                <CardDescription className="text-xs">Real-time resolution status of your IT requirements, equipment requests, or complaints (Visible to Admins only).</CardDescription>
+              </div>
+              <Button asChild size="sm" variant="outline" className="text-xs font-bold shrink-0">
+                <a href="/helpdesk">
+                  Open Full Helpdesk Portal <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </a>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {myTicketsList.length === 0 ? (
+                <div className="text-center py-6 text-xs text-muted-foreground flex flex-col items-center gap-1.5">
+                  <HeadphonesIcon className="h-8 w-8 text-muted-foreground/30" />
+                  <span>No support tickets or complaints submitted yet. Click &quot;Raise Support Ticket / Complaint&quot; above if you need assistance.</span>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {myTicketsList.map(t => (
+                    <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl bg-muted/40 border border-border gap-3">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{t.id}</span>
+                          <span className="font-bold text-xs text-foreground">{t.subject}</span>
+                          <Badge variant="outline" className="text-[10px] font-bold">{t.category}</Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">{t.description}</p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-[10px] text-muted-foreground font-mono">{t.createdAt}</span>
+                        <Badge className={t.status === "Resolved" || t.status === "Closed" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : t.status === "In Progress" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : "bg-blue-500/10 text-blue-600 border-blue-500/20"}>
+                          {t.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
           </Card>
         </div>
       </div>
@@ -842,6 +1027,49 @@ export default function DashboardPage() {
               </Button>
             </CardFooter>
           )}
+        </Card>
+
+        {/* Card: Live Employee Helpdesk & Complaint Requests */}
+        <Card className="col-span-12 lg:col-span-6 glass-card flex flex-col justify-between">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                <HeadphonesIcon className="h-5 w-5 text-rose-500" /> Employee Helpdesk & Complaints ({tickets.filter(t => t.status === "Open" || t.status === "In Progress").length})
+              </CardTitle>
+              <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 font-bold">Admin Queue</Badge>
+            </div>
+            <CardDescription className="text-xs text-muted-foreground">Recent IT tool requirements, hardware requests, or grievances submitted by staff.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {tickets.length === 0 ? (
+              <div className="text-center py-8 text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex flex-col items-center gap-2">
+                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                No pending helpdesk tickets!
+              </div>
+            ) : (
+              tickets.slice(0, 3).map((t) => (
+                <div key={t.id} className="flex items-center justify-between p-3.5 rounded-xl bg-muted/40 border border-border gap-2">
+                  <div className="space-y-0.5 overflow-hidden">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{t.id}</span>
+                      <span className="font-bold text-xs text-foreground truncate">{t.subject}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground truncate">{t.raisedBy} ({t.category})</p>
+                  </div>
+                  <Badge className={t.status === "Open" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" : t.status === "In Progress" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"}>
+                    {t.status}
+                  </Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+          <CardFooter className="border-t pt-3">
+            <Button asChild size="sm" className="w-full text-xs font-bold" variant="outline">
+              <a href="/helpdesk">
+                Manage Helpdesk Tickets & SLA Queue <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </a>
+            </Button>
+          </CardFooter>
         </Card>
       </div>
 
