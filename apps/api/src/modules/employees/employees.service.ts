@@ -10,8 +10,10 @@ import { normalizeSystemRole, SystemRole } from '../../common/enums/system-role.
 export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private resolveTenantId(tenantId?: string) {
+  private async resolveTenantId(tenantId?: string) {
     if (tenantId) return tenantId;
+    const tenant = await this.prisma.tenant.findFirst({ where: { isActive: true } });
+    if (tenant) return tenant.id;
     throw new UnauthorizedException('Tenant context is required');
   }
 

@@ -72,6 +72,64 @@ export interface EmployeeRecord {
   workLocation?: string
 }
 
+export const INITIAL_EMPLOYEES: EmployeeRecord[] = [
+  {
+    id: "EMP-1001",
+    name: "Ankit Sethi",
+    email: "Ankit.sethi@kenzoinfosystems.com",
+    role: "CEO & Founder",
+    systemRole: "Super Admin",
+    dept: "Executive Management",
+    status: "Active",
+    joinDate: "Jan 01, 2020",
+    phone: "+91 98100 12345",
+  },
+  {
+    id: "EMP-1002",
+    name: "Sujal Kumar",
+    email: "Sujal.kumar@kenzoinfosystems.com",
+    role: "Software Engineer",
+    systemRole: "Employee",
+    dept: "Engineering & Technology",
+    status: "Active",
+    joinDate: "Jan 15, 2024",
+    phone: "6207210784",
+  },
+  {
+    id: "EMP-1003",
+    name: "Chanchal Saini",
+    email: "Chanchal.saini@kenzoinfosystems.com",
+    role: "Managing Director",
+    systemRole: "Admin",
+    dept: "Administration",
+    status: "Active",
+    joinDate: "Aug 07, 2026",
+    phone: "+91 98100 99887",
+  },
+  {
+    id: "EMP-1004",
+    name: "Jitender Saini",
+    email: "Jitender.saini@kenzoinfosystems.com",
+    role: "CEO",
+    systemRole: "Super Admin",
+    dept: "Administration",
+    status: "Active",
+    joinDate: "Aug 07, 2026",
+    phone: "+91 98100 77665",
+  },
+  {
+    id: "EMP-1005",
+    name: "Laxmi Narayan",
+    email: "Laxminarayan.ojha@kenzoinfosystems.com",
+    role: "Field Sales Executive",
+    systemRole: "Employee",
+    dept: "Sales & Field Services",
+    status: "Active",
+    joinDate: "Aug 06, 2026",
+    phone: "+91 98100 33221",
+  },
+]
+
 let inMemoryEmployeesCache: EmployeeRecord[] = []
 const LISTENERS = new Set<() => void>()
 
