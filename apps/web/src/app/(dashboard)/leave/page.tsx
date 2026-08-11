@@ -96,7 +96,7 @@ export default function LeaveManagementPage() {
   }
 
   // Isolation: Filter personal leaves for regular employees
-  const myLeavesList = leaves.filter(l => l.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
+  const myLeavesList = leaves.filter(l => !user?.email || l.employeeEmail.toLowerCase() === user?.email?.toLowerCase())
 
   const getStatusBadge = (status: string) => {
     switch (status) {

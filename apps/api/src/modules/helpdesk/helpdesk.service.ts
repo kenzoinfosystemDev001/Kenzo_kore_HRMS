@@ -62,7 +62,21 @@ export class HelpdeskService {
     }
 
     if (!employee) {
-      throw new NotFoundException('No active employee found to associate with ticket');
+      let org = await this.prisma.organization.findFirst({ where: { tenantId: tid } });
+      if (!org) {
+        org = await this.prisma.organization.create({ data: { tenantId: tid, name: 'Default Organization' } });
+      }
+      employee = await this.prisma.employee.create({
+        data: {
+          tenantId: tid,
+          organizationId: org.id,
+          employeeCode: `EMP-${Date.now().toString().slice(-5)}`,
+          firstName: raisedByName?.split(' ')[0] || 'Team',
+          lastName: raisedByName?.split(' ').slice(1).join(' ') || 'Member',
+          workEmail: (raisedByEmail || 'employee@kenzoinfosystems.com').toLowerCase().trim(),
+          dateOfJoining: new Date(),
+        },
+      });
     }
 
     const count = await this.prisma.ticket.count({ where: { tenantId: tid } });

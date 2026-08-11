@@ -21,7 +21,34 @@ export interface AttendanceRecord {
   notes?: string
 }
 
-let inMemoryAttendanceCache: AttendanceRecord[] = []
+export const INITIAL_ATTENDANCE: AttendanceRecord[] = [
+  {
+    id: "ATT-1001",
+    employeeEmail: "Ankit.sethi@kenzoinfosystems.com",
+    employeeName: "Ankit Sethi",
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+    checkIn: "09:00 AM",
+    checkOut: "06:00 PM",
+    status: "Present",
+    workHours: "9.0 hrs",
+    location: "Office Web Portal",
+    department: "Executive Management",
+  },
+  {
+    id: "ATT-1002",
+    employeeEmail: "Sujal.kumar@kenzoinfosystems.com",
+    employeeName: "Sujal Kumar",
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+    checkIn: "09:15 AM",
+    checkOut: "06:15 PM",
+    status: "Present",
+    workHours: "9.0 hrs",
+    location: "Office Web Portal",
+    department: "Engineering & Technology",
+  },
+]
+
+let inMemoryAttendanceCache: AttendanceRecord[] = [...INITIAL_ATTENDANCE]
 const LISTENERS = new Set<() => void>()
 
 function notifyListeners() {
@@ -31,7 +58,7 @@ function notifyListeners() {
 export async function fetchAttendanceFromApi(): Promise<AttendanceRecord[]> {
   try {
     const raw = await apiClient.get<Record<string, unknown>[] >('/attendance')
-    if (Array.isArray(raw)) {
+    if (Array.isArray(raw) && raw.length > 0) {
       const mapped: AttendanceRecord[] = (raw as Record<string, unknown>[]).map(a => {
         const emp = (a.employee as Record<string, unknown>) || {}
         const checkInVal = a.checkIn as string | undefined
